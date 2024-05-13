@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.athntStat">
+
+	 <!-- 인증 결과 조회 -->
+	<select id="selelctReplyList" parameterType="radius.athntStat.model.AthntStatVo" resultType="radius.athntStat.model.AthntStatVo">
+		SELECT REPLY
+		  FROM ${ tableName }
+		 GROUP BY REPLY
+	</select>
+	
+	<!-- 결과 원인 조회 -->
+	<select id="selectCauseList" parameterType="radius.athntStat.model.AthntStatVo" resultType="radius.athntStat.model.AthntStatVo">
+		SELECT CAUSE_NAME
+  	  	  FROM tb_rad_cause_info
+	</select>
+
+	<!-- 테이블명 조회 / 각 테이블에 데이터가 쌓이기 때문에 FNC_GET_TABLE 프로시저 사용할필요 없음 -->
+	<select id="selectTableName" parameterType="radius.athntStat.model.AthntStatVo" resultType="String">
+		SELECT DISTINCT
+    	<if test="searchUnits == 'min'">
+             'radpostauth_stat_5m' FROM INFORMATION_SCHEMA.TABLES
+        </if>       
+        <if test="searchUnits == 'hour'">
+             'radpostauth_stat_h' FROM INFORMATION_SCHEMA.TABLES
+        </if>
+        <if test="searchUnits == 'day'"> 
+        	 'radpostauth_stat_d' FROM INFORMATION_SCHEMA.TABLES
+        </if>
+        <if test="searchUnits == 'week'">
+             'radpostauth_stat_d' FROM INFORMATION_SCHEMA.TABLES
+        </if>
+        <if test="searchUnits == 'month'">
+             'radpostauth_stat_m' FROM INFORMATION_SCHEMA.TABLES
+        </if>
+          
+	</select>
+	
+	<!-- 주간 날짜 -->
+    <select id="selectStatWeek" parameterType="String" resultType="string">
+        SELECT 
+        FNC_GET_WEEKDATE(#{startDate}) GET FROM DUAL
+    </select>
+	
+	<!-- statList 조회 -->
+	<select id="selectStatList" parameterType="radius.athntStat.model.AthntStatVo" resultType="radius.athntStat.model.AthntStatVo">
+		SELECT 
+			<if test="searchUnits == 'min'">
+			   DATE_FORMAT(A.STAT_TIME, '%Y-%m-%d %H:%i:%s') AS STAT_TIME
+			</if>
+			<if test="searchUnits == 'hour'">
+			   DATE_FORMAT(A.STAT_TIME, '%Y-%m-%d %H:%i:%s') AS STAT_TIME
+			</if>
+			<if test="searchUnits == 'day'">
+			   DATE_FORMAT(A.STAT_TIME, '%Y-%m-%d') AS STAT_TIME
+			</if>
+			<if test="searchUnits == 'week'">
+			   DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(A.STAT_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d') AS STAT_TIME
+			</if>
+			<if test="searchUnits == 'month'">
+			   DATE_FORMAT(A.STAT_TIME, '%Y-%m') AS STAT_TIME
+			</if>
+		
+			<if test="searchStatType.contains('인증결과') or searchStatType == '전체 항목'">
+			 , A.REPLY
+			</if>
+			<if test="searchStatType.contains('NAS IP') or searchStatType == '전체 항목'">
+			 , A.NAS_IP_ADDRESS 
+			</if>
+			<if test="searchStatType.contains('결과원인') or searchStatType == '전체 항목'">
+			 , A.CAUSE
+			 , IFNULL(S.CAUSE_NAME, CONCAT('Unknown [', A.cause, ']')) AS CAUSE_NAME
+			</if>
+			
+			 , CONVERT(SUM(A.AUTH_CNT), INT) AS AUTH_CNT
+			 , CONVERT(SUM(A.SUCCESS_CNT), INT) AS SUCCESS_CNT
+			 , CONVERT(SUM(A.FAIL_CNT), INT) AS FAIL_CNT
+		  FROM ${ tableName } A
+		  LEFT OUTER JOIN tb_rad_cause_info S  
+			ON A.CAUSE = S.CAUSE
+		 WHERE A.STAT_TIME BETWEEN STR_TO_DATE(#{startDate}, '%Y%m%d%H%i%s') 
+		   AND STR_TO_DATE(#{endDate}, '%Y%m%d%H%i%s')
+			
+		 	<if test="searchReply != null and searchReply != '' and searchReply != '전체 항목'">
+		 		AND REPLY IN (${ searchReply })
+		 	</if>
+		 	<if test="searchNasIp != null and searchNasIp != ''">
+		 		AND NAS_IP_ADDRESS = #{ searchNasIp }
+		 	</if>
+		 	<if test="searchCause != null and searchCause != '' and searchCause != '전체 항목'">
+		 		AND CAUSE_NAME IN ( ${searchCause} )
+		 	</if>
+
+		 GROUP BY 
+		 	<if test="searchUnits == 'min'">
+			   DATE_FORMAT(STAT_TIME, '%Y-%m-%d %H:%i:%s') 
+			</if>
+			<if test="searchUnits == 'hour'">
+			   DATE_FORMAT(STAT_TIME, '%Y-%m-%d %H:%i:%s')
+			</if>
+			<if test="searchUnits == 'day'">
+			   DATE_FORMAT(STAT_TIME, '%Y-%m-%d') 
+			</if>
+			<if test="searchUnits == 'week'">
+			   DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(STAT_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d')
+			</if>
+			<if test="searchUnits == 'month'">
+			   DATE_FORMAT(STAT_TIME, '%Y-%m') 
+			</if>
+	        <if test="searchStatType != null and searchStatType.contains('인증결과') or searchStatType == '전체 항목'">
+	            , REPLY
+	        </if>
+	        <if test="searchStatType != null and searchStatType.contains('NAS IP') or searchStatType == '전체 항목'">
+	            , NAS_IP_ADDRESS 
+	        </if>
+	        <if test="searchStatType != null and searchStatType.contains('결과원인') or searchStatType == '전체 항목'">
+	            , A.CAUSE
+	        </if>
+
+		 ORDER BY STAT_TIME DESC
+		 	<if test="searchStatType != null and searchStatType.contains('인증결과') or searchStatType == '전체 항목'">
+	            , REPLY
+	        </if>
+	        <if test="searchStatType != null and searchStatType.contains('NAS IP') or searchStatType == '전체 항목'">
+	            , NAS_IP_ADDRESS 
+	        </if>
+	        <if test="searchStatType != null and searchStatType.contains('결과원인') or searchStatType == '전체 항목'">
+	            , CAUSE
+	        </if>
+	        		 
+			 <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+	            LIMIT #{startrow}, #{fetchrow}
+	        </if>
+	</select> 
+	
+	<select id="selectStatCnt" parameterType="radius.athntStat.model.AthntStatVo" resultType="int">
+		SELECT COUNT(*) AS statCnt
+		  FROM (
+		  			SELECT 1
+		  			  FROM ${ tableName } A
+		  			  LEFT OUTER JOIN tb_rad_cause_info S  
+		  			    ON A.CAUSE = S.CAUSE
+		  			 WHERE A.STAT_TIME BETWEEN STR_TO_DATE(#{startDate}, '%Y%m%d%H%i%s') 
+					   AND STR_TO_DATE(#{endDate}, '%Y%m%d%H%i%s')
+					   
+					 <if test="searchReply != null and searchReply != '' and searchReply != '전체 항목'">
+					 	AND REPLY IN (${ searchReply })
+					 </if>
+					 <if test="searchNasIp != null and searchNasIp != ''">
+					 	AND NAS_IP_ADDRESS = #{ searchNasIp }
+					 </if>
+					 <if test="searchCause != null and searchCause != '' and searchCause != '전체 항목'">
+					 	AND CAUSE_NAME IN ( ${searchCause} )
+					 </if>
+					 
+					 GROUP BY STAT_TIME
+					 
+					 <!-- 검색 조건 -->
+			        <if test="searchStatType != null and searchStatType.contains('인증결과') or searchStatType == '전체 항목'">
+			            , REPLY
+			        </if>
+			        <if test="searchStatType != null and searchStatType.contains('NAS IP') or searchStatType == '전체 항목'">
+			            , NAS_IP_ADDRESS 
+			        </if>
+			        <if test="searchStatType != null and searchStatType.contains('결과원인') or searchStatType == '전체 항목'">
+			            , A.CAUSE
+			        </if>
+		  	   ) AS selectCount
+	</select>
+
+</mapper>

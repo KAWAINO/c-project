@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.radacctInfo">
+
+	<!-- Account Status 조회 -->
+	<select id="selectAcctStatusList" parameterType="radius.radacctInfo.model.RadacctInfoVo" resultType="radius.radacctInfo.model.RadacctInfoVo">
+		SELECT A.ACCT_STATUS AS acctStatus
+		  FROM radacct A
+		 GROUP BY ACCT_STATUS
+	</select>
+
+	<!-- radacctInfoList 조회 -->
+	<select id="selectRadacctInfoList" parameterType="radius.radacctInfo.model.RadacctInfoVo" resultType="radius.radacctInfo.model.RadacctInfoVo">
+		SELECT A.ACCTSESSIONID 		AS acctSessionId
+			 , A.USERNAME 			AS userName
+			 , A.GPP_IMSI 			AS gppImsi
+			 , A.MSISDN 			AS msisdn
+			 , A.GROUPNAME 			AS groupName
+			 , A.REALM 				AS realm
+			 , A.NASIPADDRESS 		AS nasIpAddress
+			 , A.NASPORTID 			AS nasPortId
+			 , A.NASPORTTYPE 		AS nasPortType
+			 , A.ACCTUPDATETIME 	AS acctUpdateTime
+			 , A.ACCTINTERVAL 		AS acctInterval
+			 , A.ACCTSESSIONTIME 	AS acctSessionTime
+			 , A.ACCTAUTHENTIC 		AS acctAuthentic
+			 , A.CONNECTINFO_START 	AS connectInfoStart
+			 , A.CONNECTINFO_STOP 	AS connectInfoStop
+			 , A.ACCTINPUTOCTETS 	AS acctInputOctets
+			 , A.ACCTOUTPUTOCTETS 	AS acctOutputOctets
+			 , A.ACCTINPUTPACKETS 	AS acctInputPackets
+			 , A.ACCTOUTPUTPACKETS 	AS acctOutputPackets
+			 , A.CALLEDSTATIONID 	AS calledStationId
+			 , A.CALLINGSTATIONID 	AS callingStationId
+			 , A.ACCT_STATUS 		AS acctStatus
+			 , A.ACCTTERMINATECAUSE AS acctTerminateCause
+			 , A.SERVICETYPE 		AS serviceType
+			 , A.FRAMEDPROTOCOL 	AS framedProtocol
+			 , A.FRAMEDIPADDRESS 	AS framedIpAddress
+			 , A.GPP_SGSN_ADDRESS 	AS gppSgsnAddress
+			 , A.GPP_GGSN_ADDRESS 	AS gppGgsnAdress
+			 , A.GPP_CHARGING_ID 	AS gppChargingId
+		  FROM radacct A
+		 WHERE A.ACCT_STATUS IN ('Start', 'Interim-Update')
+
+		 <if test="searchUserName != null and searchUserName != ''">
+		   AND A.USERNAME LIKE CONCAT('%',#{ searchUserName },'%')
+		 </if>
+		 <if test="searchImsi != null and searchImsi != ''">
+		   AND A.GPP_IMSI LIKE CONCAT('%',#{ searchImsi },'%')
+		 </if>
+		 <if test="searchMsisdn != null and searchMsisdn != ''">
+		   AND A.MSISDN LIKE CONCAT('%',#{ searchMsisdn },'%')
+		 </if>
+		 <if test="searchAcctStatus != null and searchAcctStatus != '' and searchAcctStatus != '전체 항목'">
+		   AND ACCT_STATUS IN ( ${ searchAcctStatus } )
+		 </if>
+		 
+		 ORDER BY ACCTSESSIONID DESC, ACCT_STATUS
+		 
+		 <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+	     LIMIT #{startrow}, #{fetchrow}
+	     </if>
+	</select>
+	
+	<!-- 페이징 카운트 -->
+	<select id="selectRadacctInfoListCnt" parameterType="radius.radacctInfo.model.RadacctInfoVo" resultType="int">
+		SELECT COUNT(*) AS radacctInfoCnt
+		  FROM (
+		  			SELECT 1
+		  			  FROM radacct A
+		  		) AS COUNT
+	</select>
+	
+</mapper>

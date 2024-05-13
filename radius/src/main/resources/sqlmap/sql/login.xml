@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.login">
+	<!-- ID, PASSWORD 가 맞는 회원이 있는지 조회 -->
+    <select id="selectAuthorizedUser" parameterType="radius.login.model.LoginVo" resultType="radius.login.model.LoginVo">
+		SELECT USERID
+			 , PASSWD
+			 , USERNAME
+		  FROM TB_USER_INFO 
+		 WHERE USERID = #{ userId }
+		   AND PASSWD = SHA2(#{passWd}, 256)
+	</select>
+</mapper>

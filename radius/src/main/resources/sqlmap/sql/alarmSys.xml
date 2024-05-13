@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.alarmSys">
+
+	<!-- alarmIdList 조회 -->
+	<select id="selectAlarmIdList" parameterType="radius.alarmSys.model.AlarmSysVo" resultType="radius.alarmSys.model.AlarmSysVo">
+		SELECT A.ALARM_ID AS AID
+		  FROM TB_ALARM_ID A
+	     ORDER BY ALARM_ID
+	</select>
+	
+	
+	
+	<!-- alarmSysList 조회 -->
+	<select id="selectAlarmSysList" parameterType="radius.alarmSys.model.AlarmSysVo" resultType="radius.alarmSys.model.AlarmSysVo">
+		SELECT A.IDX 	    AS IDX
+			 , A.AID 		AS AID
+			 , A.ALARM_STR 	AS ALARM_STR
+			 , A.ADD_STR 	AS ADD_STR
+			 , A.SEVERITY	AS SEVERITY
+			 , CONCAT(A.LOC_A, ', ', CONCAT(A.LOC_B, ', ', CONCAT(A.LOC_C, ' '))) AS ALARMLOCATION
+			 , DATE_FORMAT(A.EVT_TIME, '%Y-%m-%d %H:%i:%s') AS EVT_TIME
+			 , DATE_FORMAT(A.FIRST_TIME, '%Y-%m-%d %H:%i:%s') AS FIRST_TIME
+		  FROM TB_ALARM_SYS A
+		  LEFT OUTER JOIN TB_ALARM_ID S 
+		  	ON A.AID = S.ALARM_ID
+		 WHERE A.ALARM_STR = S.ALARM_NAME
+		   AND A.SEVERITY = S.SEVERITY
+
+		   <!-- 검색 -->
+		   <if test="searchAId != null and searchAId != ''">
+		   	AND A.AID  = #{ searchAId }
+		   </if> 
+		   <if test="searchSeverity != null and searchSeverity != ''">
+		   	AND A.SEVERITY  = #{ searchSeverity }
+		   </if> 
+		   <if test="searchAlarmStr != null and searchAlarmStr != ''">
+		   	AND A.ALARM_STR LIKE CONCAT('%' #{ searchAlarmStr }, '%')    
+		   </if>
+		   <if test="searchAddStr != null and searchAddStr != ''">
+		   	AND A.ADD_STR LIKE CONCAT('%' #{ searchAddStr }, '%')    
+		   </if>  
+		   <if test="searchLocA != null and searchLocA != ''">
+		   	AND A.LOC_B LIKE CONCAT('%', #{ searchLocA }, '%') 
+		   	 OR A.LOC_C LIKE CONCAT('%', #{ searchLocA }, '%')
+		   	 OR A.LOC_A LIKE CONCAT('%', #{ searchLocA }, '%')
+		   </if> 
+		   
+		   ORDER BY A.EVT_TIME DESC
+		   <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+          	LIMIT #{startrow}, #{fetchrow}
+           </if> 
+           
+	</select>
+	
+	<!-- 페이징 카운트 -->
+	<select id="selectAlarmSysCnt" parameterType="radius.alarmSys.model.AlarmSysVo" resultType="int">
+		SELECT COUNT(*) AS alarmSysCnt
+		  FROM (
+		  			SELECT 1
+		  			  FROM TB_ALARM_SYS A
+		  			  LEFT OUTER JOIN TB_ALARM_ID S 
+					  	ON A.AID = S.ALARM_ID
+					   AND A.ALARM_STR = S.ALARM_NAME
+					   AND A.SEVERITY = S.SEVERITY
+		  		) AS selectCnt
+	</select>
+	
+	<select id="selectSevCntList" parameterType="radius.alarmSys.model.AlarmSysVo" resultType="radius.alarmSys.model.AlarmSysVo">
+		SELECT <!-- CASE WHEN S.SEVERITY = 'C' THEN 'CRITICAL' 
+					WHEN S.SEVERITY = 'M' THEN 'MAJOR' 
+					WHEN S.SEVERITY = 'N' THEN 'MINOR' END SEVERITY
+	  		 , --> COUNT(A.SEVERITY)	S_CNT
+  		FROM (
+						SELECT     A.AID 		AS AID
+								 , A.ALARM_STR 	AS ALARM_STR
+								 , A.ADD_STR 	AS ADD_STR
+								 , A.SEVERITY AS SEVERITY
+								 , CONCAT(A.LOC_A, ', ', CONCAT(A.LOC_B, ', ', CONCAT(A.LOC_C, ' '))) AS ALARMLOCATION
+								 , DATE_FORMAT(A.EVT_TIME, '%Y-%m-%d %H:%i:%s') AS EVT_TIME
+			 					 , DATE_FORMAT(A.FIRST_TIME, '%Y-%m-%d %H:%i:%s') AS FIRST_TIME
+							  FROM TB_ALARM_SYS A
+							  LEFT OUTER JOIN TB_ALARM_ID S 
+							  	ON A.AID = S.ALARM_ID
+							   AND A.ALARM_STR = S.ALARM_NAME
+							   AND A.SEVERITY = S.SEVERITY
+		      ) A 
+		RIGHT OUTER JOIN TB_ALARM_ID S ON A.SEVERITY = S.SEVERITY
+		GROUP BY S.SEVERITY
+		ORDER BY S.SEVERITY
+	</select>
+	
+	<!-- 알람현황 삭제 -->
+	<delete id="deleteAlarmSysList" parameterType="radius.alarmSys.model.AlarmSysVo">
+		DELETE FROM TB_ALARM_SYS
+		 WHERE IDX IN ( #{ idx } )
+	</delete>
+	
+	<!-- 알람이력 추가 -->
+	<insert id="insertAlarmHistory" parameterType="radius.alarmSys.model.AlarmSysVo">
+		INSERT INTO TB_ALARM_SYS_HIS
+		(
+			EVT_TIME
+		  , AID
+		  , SEVERITY
+		  , LOC_A
+		  , LOC_B
+		  , LOC_C
+		  , ALARM_STR
+		  , ADD_STR
+		  , FILTERYN
+		  , FIRST_TIME
+		  , DUP_CNT
+		  <!-- , CLR_FLAG -->
+		  , CLR_TIME
+		  , CLR_USER
+		  , SAVEDATE
+		)
+
+		(
+			SELECT EVT_TIME
+				 , AID
+				 , SEVERITY
+				 , LOC_A
+				 , LOC_B
+				 , LOC_C
+				 , ALARM_STR
+				 , ADD_STR
+				 , FILTERYN
+				 , FIRST_TIME
+				 , DUP_CNT
+				 , DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+				 , #{ userId }
+				 , NOW()
+			  FROM TB_ALARM_SYS
+			 WHERE IDX IN ( #{ idx } )
+		)
+		
+	</insert>
+	
+</mapper>

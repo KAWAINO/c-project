@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.athntHistory">
+
+	<!-- 인증 결과 조회 -->
+	<select id="selelctReplyList" parameterType="radius.athntHistory.model.AthntHistoryVo" resultType="radius.athntHistory.model.AthntHistoryVo">
+		SELECT REPLY
+		  FROM radpostauth  
+		 GROUP BY REPLY
+	</select>
+	
+	
+	<!-- 결과 원인 조회 -->
+	<select id="selectCauseList" parameterType="radius.athntHistory.model.AthntHistoryVo" resultType="radius.athntHistory.model.AthntHistoryVo">
+		SELECT CAUSE_NAME 
+  	  	  FROM tb_rad_cause_info 
+	</select>
+ 	
+	<!-- 인증 이력 리스트 조회 -->
+	<select id="selectAthntHistoryList" parameterType="radius.athntHistory.model.AthntHistoryVo" resultType="radius.athntHistory.model.AthntHistoryVo">
+		SELECT A.AUTHDATE
+			 , A.MSISDN
+			 , A.GPP_IMSI
+			 , A.USERNAME
+			 , A.REPLY
+			 , A.FRAMED_IP_ADDRESS
+			 , A.NAS_IP_ADDRESS
+			 , A.NAS_PORT_NO
+			 , A.CAUSE
+			 , IFNULL(S.CAUSE_NAME, CONCAT('Unknown [', A.cause, ']')) AS CAUSE_NAME
+		  FROM radpostauth A
+		  LEFT OUTER JOIN tb_rad_cause_info S
+		 	ON A.CAUSE = S.CAUSE 
+		 WHERE A.AUTHDATE BETWEEN STR_TO_DATE(#{startDate}, '%Y%m%d%H%i%s') 
+		   AND STR_TO_DATE(#{endDate}, '%Y%m%d%H%i%s')
+		 
+		 <if test="searchReply != null and searchReply != '' and searchReply != '전체 항목'"> 
+    		AND REPLY IN (${ searchReply }) 
+		 </if> 
+		 <if test="searchCause != null and searchCause != '' and searchCause != '전체 항목'"> 
+    		AND CAUSE_NAME IN (${ searchCause }) 
+		 </if>
+		 <if test="searchMsisdn != null and searchMsisdn != ''">
+		 	AND A.MSISDN LIKE CONCAT('%',#{ searchMsisdn },'%')
+		 </if>
+		 <if test="searchImsi != null and searchImsi != ''">
+		 	AND A.GPP_IMSI LIKE CONCAT('%',#{ searchImsi },'%')
+		 </if>
+		 <if test="searchUserName != null and searchUserName != ''">
+		 	AND A.USERNAME LIKE CONCAT('%',#{ searchUserName },'%')
+		 </if>
+		 <!-- <if test="searchStartDate != null and searchStartDate != ''">
+		 	AND A.AUTHDATE <![CDATA[>=]]> DATE_FORMAT(#{ searchStartDate }, '%Y-%m-%d %H:%i:%s')
+		 </if>
+		 <if test="searchEndDate != null and searchEndDate != ''">
+		 	AND A.AUTHDATE <![CDATA[<=]]> DATE_FORMAT(#{ searchEndDate }, '%Y-%m-%d %H:%i:%s')
+		 </if>  -->
+		 ORDER BY A.AUTHDATE DESC
+		 
+		 <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+          	LIMIT #{startrow}, #{fetchrow}
+        </if>
+        
+    </select>
+		
+	<select id="selectAccessCnt" parameterType="radius.athntHistory.model.AthntHistoryVo" resultType="int">
+		SELECT COUNT(*) AS accessCnt
+		  FROM (
+			  		SELECT 1
+			  		  FROM radpostauth A
+					  LEFT OUTER JOIN tb_rad_cause_info S
+						ON A.CAUSE = S.CAUSE 
+					 WHERE A.AUTHDATE BETWEEN STR_TO_DATE(#{startDate}, '%Y%m%d%H%i%s') 
+					   AND STR_TO_DATE(#{endDate}, '%Y%m%d%H%i%s') 
+					 
+					<if test="searchReply != null and searchReply != '' and searchReply != '전체 항목'"> 
+						AND REPLY IN (${ searchReply }) 
+					</if> 			
+					<if test="searchCause != null and searchCause != '' and searchCause != '전체 항목'"> 
+					    AND CAUSE_NAME IN (${ searchCause }) 
+					</if>
+					<if test="searchMsisdn != null and searchMsisdn != ''">
+					 	AND A.MSISDN LIKE CONCAT('%',#{ searchMsisdn },'%')
+					 </if>
+					 <if test="searchImsi != null and searchImsi != ''">
+					 	AND A.GPP_IMSI LIKE CONCAT('%',#{ searchImsi },'%')
+					 </if>
+					 <if test="searchUserName != null and searchUserName != ''">
+					 	AND A.USERNAME LIKE CONCAT('%',#{ searchUserName },'%')
+					 </if>
+			  	) AS selectCount
+	</select>
+	
+</mapper>

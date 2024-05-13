@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.inmarsat">
+
+	<!-- inmarsatList -->
+	<select id="selectInmarsatList" parameterType="radius.inmarsat.model.InmarsatVo" resultType="radius.inmarsat.model.InmarsatVo">
+		SELECT A.ID			AS ID
+			 , A.GROUPNAME	AS GROUPNAME
+			 , A.ATTRIBUTE	AS ATTRIBUTE
+			 , A.OP			AS OP
+			 , A.VALUE		AS VALUE
+		  FROM radgroupreply A
+		  <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+	            LIMIT #{startrow}, #{fetchrow}
+	      </if>
+	</select>
+	
+	<!-- paging -->
+	<select id="selectInmarsatCnt" parameterType="radius.inmarsat.model.InmarsatVo" resultType="int">
+		SELECT COUNT(*) AS inmarsatCnt
+		  FROM (
+		  			SELECT 1
+		  			  FROM radgroupreply
+		  		) AS COUNT
+	</select>
+	
+	<!-- 중복검사 -->
+    <select id="chkInsertValues" parameterType="radius.inmarsat.model.InmarsatVo" resultType="radius.inmarsat.model.InmarsatVo">
+		SELECT A.ATTRIBUTE	AS ATTRIBUTE
+		  FROM radgroupreply A
+		 WHERE ATTRIBUTE = #{ addAttribute }
+		   
+	</select>
+	
+	<!-- 등록 -->
+	<insert id="insertInmarsat" parameterType="radius.inmarsat.model.InmarsatVo">
+		INSERT INTO radgroupreply
+		(
+			GROUPNAME
+		  , ATTRIBUTE
+		  , OP
+		  , VALUE
+		)
+		VALUES
+		(
+		 	'inmarsat'
+		  , #{ addAttribute }
+		  , ':='
+		  , #{ addValue }
+		)
+	</insert>
+	
+	<!-- 상세페이지 -->
+	<select id="selectInmarsatInfo" parameterType="java.util.HashMap" resultType="radius.inmarsat.model.InmarsatVo">
+		SELECT A.ID			AS ID
+			 , A.GROUPNAME	AS GROUPNAME
+			 , A.ATTRIBUTE	AS ATTRIBUTE
+			 , A.OP			AS OP
+			 , A.VALUE		AS VALUE
+		  FROM radgroupreply A
+		 WHERE GROUPNAME = #{ groupName }
+		   AND ATTRIBUTE = #{ attribute }
+	</select>
+	
+	<!-- 수정 -->
+	<update id="updateInmarsat" parameterType="radius.inmarsat.model.InmarsatVo">
+		UPDATE radgroupreply
+		<set>
+			   VALUE = #{ updValue }
+		</set>
+	     WHERE GROUPNAME = #{ updGroupName }
+	       AND ATTRIBUTE = #{ updAttribute }
+	</update>
+	
+	<!-- 삭제 -->
+	<delete id="deleteInmarsat" parameterType="radius.inmarsat.model.InmarsatVo">
+		DELETE FROM radgroupreply
+		 WHERE GROUPNAME = #{ groupName }
+		   AND ATTRIBUTE = #{ attribute } 
+	</delete>	
+</mapper>

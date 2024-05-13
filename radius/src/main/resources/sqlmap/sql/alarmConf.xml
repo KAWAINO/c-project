@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.alarmConf">
+
+	<!-- alarmConfList 조회 -->
+	<select id="selectAlarmConfList" parameterType="radius.alarmConf.model.AlarmConfVo" resultType="radius.alarmConf.model.AlarmConfVo">
+		SELECT A.PERIOD 			AS PERIOD
+			 , A.AUTH_FLAG 			AS AUTH_FLAG
+			 , A.AUTH_CNT 			AS AUTH_CNT
+			 , A.USE_YN 			AS USE_YN
+			 , IFNULL(A.DESCR, '') 	AS DESCR
+		  FROM tb_auth_alarm_conf A
+		  
+		  <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+	            LIMIT #{startrow}, #{fetchrow}
+	      </if>
+	</select>
+	
+	<!-- 페이징 -->
+	<select id="selectAlarmConfCnt" parameterType="radius.alarmConf.model.AlarmConfVo" resultType="int">
+		SELECT COUNT(*) AS alarmConfCnt
+		  FROM (
+		  			SELECT 1
+		  			  FROM tb_auth_alarm_conf
+		  		) AS COUNT
+	</select>
+	
+	<!-- period & auth_flag 중복검사 -->
+    <select id="chkInsertValues" parameterType="radius.alarmConf.model.AlarmConfVo" resultType="radius.alarmConf.model.AlarmConfVo">
+		SELECT A.PERIOD 	AS PERIOD
+			 , A.AUTH_FLAG 	AS AUTH_FLAG
+		  FROM tb_auth_alarm_conf A
+		 WHERE PERIOD = #{ addPeriod }
+		   AND AUTH_FLAG = #{ addAuthFlag }
+	</select>
+	
+	<!-- alarmConf 추가 -->
+	<insert id="insertAlarmConf" parameterType="radius.alarmConf.model.AlarmConfVo">
+		INSERT INTO tb_auth_alarm_conf
+		(
+			PERIOD
+		  , AUTH_FLAG
+		  , AUTH_CNT
+		  , USE_YN
+		  , DESCR
+		)
+		VALUES
+		(
+		 	#{ addPeriod }
+		  , #{ addAuthFlag }
+		  , #{ addAuthCnt }
+		  , #{ addUseYn }
+		  , #{ addDescr }
+		)
+	</insert>
+	
+	<!-- 상세페이지 -->
+	<select id="selectAlarmConfInfo" parameterType="java.util.HashMap" resultType="radius.alarmConf.model.AlarmConfVo">
+		SELECT A.PERIOD 	AS PERIOD
+			 , A.AUTH_FLAG 	AS AUTH_FLAG
+			 , A.AUTH_CNT 	AS AUTH_CNT
+			 , A.USE_YN 	AS USE_YN
+			 , A.DESCR 		AS DESCR
+		  FROM tb_auth_alarm_conf A 
+		 WHERE PERIOD = #{ period }
+		   AND AUTH_FLAG = #{ auth_flag }
+	</select>
+	
+	<!-- 알람설정 수정 -->
+	<update id="updateAlarmConf" parameterType="radius.alarmConf.model.AlarmConfVo">
+		UPDATE tb_auth_alarm_conf
+		<set>
+	      	    AUTH_CNT = #{ updAuthCnt }
+		  	  , USE_YN  = #{ updUseYn }
+		  	  , DESCR = #{ updDescr }
+		</set>
+	      WHERE PERIOD  = #{ updPeriod }
+	        AND AUTH_FLAG = #{ updAuthFlag }
+	</update>
+	
+	<!-- 알람설정 삭제 -->
+	<delete id="deleteAlarmConf" parameterType="radius.alarmConf.model.AlarmConfVo">
+		DELETE FROM tb_auth_alarm_conf
+		 WHERE PERIOD = #{ period }
+		   AND AUTH_FLAG = #{ auth_flag }
+	</delete>
+	
+</mapper>

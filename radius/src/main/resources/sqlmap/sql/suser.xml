@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.suser">
+	
+    <select id="selectSuserList" parameterType="radius.suser.model.SuserVo" resultType="radius.suser.model.SuserVo">
+		SELECT USERID
+			 , USERNAME
+			 , DESCR
+		  FROM TB_USER_INFO 
+		 WHERE 1 = 1
+	<!-- 검색 : 운영자 ID -->
+	<if test="searchUserId != null and searchUserId != ''">
+		 AND USERID LIKE CONCAT('%', #{ searchUserId }, '%')
+	</if>
+	<!-- 검색 : 운영자 이름 -->
+	<if test="searchUserName != null and searchUserName != ''">
+		 AND USERNAME LIKE CONCAT('%', #{ searchUserName }, '%')
+	</if>
+		 ORDER BY USERID, USERNAME
+	<if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+          LIMIT #{startrow}, #{fetchrow}
+    </if>
+	</select>
+	
+	<select id="getTotalSuserList" parameterType="radius.suser.model.SuserVo" resultType="radius.suser.model.SuserVo">
+		SELECT USERID
+			 , USERNAME
+			 , DESCR
+		  FROM TB_USER_INFO 
+		 WHERE 1 = 1 
+	<!-- 검색 : 운영자 ID -->
+	<if test="searchUserId != null and searchUserId != ''">
+		 AND USERID LIKE CONCAT('%', #{ searchUserId }, '%')
+	</if>
+	<!-- 검색 : 운영자 이름 -->
+	<if test="searchUserName != null and searchUserName != ''">
+		 AND USERNAME LIKE CONCAT('%', #{ searchUserName }, '%')
+	</if>
+		 ORDER BY USERID, USERNAME
+	</select>
+	
+	<!-- 운영자 ID 중복검사-->
+    <select id="chkInsertSuser" parameterType="radius.suser.model.SuserVo" resultType="radius.suser.model.SuserVo">
+		SELECT USERID
+		  FROM TB_USER_INFO
+		 WHERE USERID = #{ addUserId }
+	</select>
+	
+	<!-- 운영자 추가 -->
+	<insert id="insertSuser" parameterType="radius.suser.model.SuserVo">
+		INSERT INTO TB_USER_INFO
+		(
+			USERID
+		  , PASSWD
+		  , USERNAME
+		  , DESCR
+		)
+		VALUES
+		(
+			#{ addUserId }
+		  , SHA2(#{addPassWd}, 256)
+		  , #{ addUserName }
+		  , #{ addDescr }
+		)
+	</insert>
+	
+	<!-- 운영자 상세정보 -->
+	<select id="selectSuserInfo" parameterType="java.util.HashMap" resultType="radius.suser.model.SuserVo">
+		SELECT USERID
+			 , USERNAME
+			 , DESCR
+		  FROM TB_USER_INFO
+		 WHERE USERID = #{ userId }
+	</select>
+	
+	<!-- 운영자 수정 -->
+	<update id="updateSuser" parameterType="radius.suser.model.SuserVo">
+		UPDATE TB_USER_INFO
+		<set>
+			<if test="cngPwd != null">PASSWD = SHA2(#{ updPassWd }, 256),</if>
+			USERNAME = #{ updUserName }
+		  , DESCR = #{ updDescr }
+		</set>
+		 WHERE USERID = #{ updUserId }
+	</update>
+	
+	<!-- 운영자 삭제 -->
+	<delete id="deleteSuser" parameterType="radius.suser.model.SuserVo">
+		DELETE FROM TB_USER_INFO
+		WHERE USERID = #{ userId }
+	</delete>
+	
+</mapper>

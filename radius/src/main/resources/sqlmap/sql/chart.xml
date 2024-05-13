@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="radius.chart">
+
+	<!-- 인증시도추이 리스트 -->
+	<select id="selectAccessCntList" parameterType="radius.chart.model.ChartVo" resultType="radius.chart.model.ChartVo">
+	 SELECT DATE_FORMAT(S.HOUR, '%Y%m%d%H') AS TIME
+	 	  , DATE_FORMAT(S.HOUR, '%H') HOUR 
+		  , IFNULL(DATE_FORMAT(A.STAT_TIME, '%H'), '') AS STAT_TIME 
+		  , IFNULL(CONVERT(SUM(A.AUTH_CNT), INT), '-1') AS AUTH_CNT 
+		  , IFNULL(CONVERT(SUM(A.SUCCESS_CNT), INT), '-1') AS SUCCESS_CNT 
+		  , IFNULL(CONVERT(SUM(A.FAIL_CNT), INT), '-1') AS FAIL_CNT 
+		FROM ( 
+		          SELECT @N := @N +01 AS n 
+		                 , DATE_ADD(DATE_ADD(NOW(), INTERVAL -1 DAY), interval @N -1 HOUR) AS HOUR   
+		             FROM (radpostauth_stat_5m), (SELECT @N:=0 FROM dual ) a   
+		             LIMIT 25 
+		       )S 
+		LEFT JOIN radpostauth_stat_5m A 
+		ON DATE_FORMAT(S.HOUR, '%Y%m%d%H') = DATE_FORMAT(A.STAT_TIME, '%Y%m%d%H') 
+		GROUP BY DATE_FORMAT(S.HOUR, '%Y%m%d%H');
+	</select>
+
+	<!-- 금일 누적량 리스트 -->
+	<select id="selectAccCntList" parameterType="radius.chart.model.ChartVo" resultType="radius.chart.model.ChartVo">
+		SELECT IFNULL(DATE_FORMAT(A.STAT_TIME, '%Y-%m-%d'), CURDATE()) AS STAT_TIME
+			  , IFNULL(CONVERT(SUM(A.AUTH_CNT), INT), '0') AS AUTH_CNT
+			  , IFNULL(CONVERT(SUM(A.SUCCESS_CNT), INT), '0') AS SUCCESS_CNT
+		  	  , IFNULL(CONVERT(SUM(A.FAIL_CNT), INT), '0') AS FAIL_CNT
+		  FROM radpostauth_stat_5m A
+		 WHERE DATE_FORMAT(A.STAT_TIME, "%Y-%m-%d") = CURDATE()
+	</select>
+	
+	<!-- accTable -->
+	<!-- <select id="selectAccTableList" parameterType="radius.chart.model.ChartVo" resultType="radius.chart.model.ChartVo">
+		SELECT DATE_FORMAT(A.STAT_TIME, '%H:00') AS STAT_TIME
+			 , CONVERT(SUM(A.AUTH_CNT), INT) AS AUTH_CNT
+			 , CONVERT(SUM(A.SUCCESS_CNT), INT) AS SUCCESS_CNT
+			 , CONVERT(SUM(A.FAIL_CNT), INT) AS FAIL_CNT
+		  FROM radpostauth_stat_h A
+		 WHERE DATE_FORMAT(A.STAT_TIME, "%Y-%m-%d") = CURDATE()
+		 GROUP BY A.STAT_TIME
+	</select> -->
+	<select id="selectAccTableList" parameterType="radius.chart.model.ChartVo" resultType="radius.chart.model.ChartVo">
+		SELECT IFNULL(DATE_FORMAT(A.STAT_TIME, '%H'), '') AS STAT_TIME 
+			 , IFNULL(CONVERT(SUM(A.AUTH_CNT), INT), '0') AS AUTH_CNT 
+			 , IFNULL(CONVERT(SUM(A.SUCCESS_CNT), INT), '0') AS SUCCESS_CNT 
+			 , IFNULL(CONVERT(SUM(A.FAIL_CNT), INT), '0') AS FAIL_CNT 
+		  FROM radpostauth_stat_5m A 
+		 WHERE DATE_FORMAT(A.STAT_TIME, '%Y%m%d') = CURDATE()
+		 GROUP BY DATE_FORMAT(A.STAT_TIME, '%Y%m%d%H');
+	</select>
+	
+</mapper>
