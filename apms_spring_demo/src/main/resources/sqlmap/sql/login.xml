@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="apms.login">
+	<!-- ID, PASSWORD 가 맞는 회원이 있는지 조회 -->
+    <select id="selectAuthorizedUser" parameterType="apms.login.model.LoginVo" resultType="apms.login.model.LoginVo">
+		SELECT S_CODE AS SCODE, USER_ID, PASSWD, USER_NAME, USER_GRADE, TB.GNAME GNAME
+		FROM TB_USER_INFO_SHIP TA, TB_GRADE_INFO TB
+		WHERE TA.USER_GRADE=TB.GRADE
+		AND TA.USER_ID   = #{user_id}
+		AND TA.PASSWD  = SHA1(#{passwd})
+	</select>
+</mapper>

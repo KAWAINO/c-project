@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="apms.suser">
+	<!-- 운영자 등급 조회 -->
+    <select id="selectUserGrade" resultType="apms.suser.model.GradeVo">
+		SELECT GRADE, GNAME
+		FROM TB_GRADE_INFO_SHIP
+	</select>
+	
+	<!-- 운영자 관리 리스트 조회 -->
+	<select id="selectUserList" parameterType="apms.suser.model.SuserVo" resultType="apms.suser.model.SuserVo">
+		SELECT UIS.USER_ID, UIS.USER_NAME, GIS.GNAME, UIS.TEAM_NAME, 
+		UIS.PHONE, UIS.MOBILE, UIS.EMAIL, UIS.DEL_FLAG, 
+		UIS.S_CODE, SI.S_NAME, SCI.COMP_ID, SCI.COMP_NAME
+		FROM 
+		TB_USER_INFO_SHIP UIS, TB_SHIP_INFO SI, TB_SCOMP_INFO SCI, TB_GRADE_INFO_SHIP GIS
+		WHERE UIS.S_CODE = SI.S_CODE
+		AND UIS.USER_GRADE = GIS.GRADE
+		AND SI.COMP_ID = SCI.COMP_ID
+		AND UIS.DEL_FLAG = 'N'
+		AND UIS.S_CODE = #{s_code}
+		<!-- 검색 : 등급 -->
+        <if test="searchGrade != null and searchGrade != ''">
+          AND UIS.USER_GRADE = #{searchGrade}
+        </if>
+		<!-- 검색 : 운영자 ID -->
+        <if test="searchUserId != null and searchUserId != ''">
+          AND UIS.USER_ID LIKE CONCAT('%',#{searchUserId},'%')
+        </if>
+		<!-- 검색 : 운영자 이름 -->
+        <if test="searchUserName != null and searchUserName != ''">
+          AND UIS.USER_NAME LIKE CONCAT('%',#{searchUserName},'%')
+        </if>
+        ORDER BY UIS.USER_GRADE, UIS.USER_ID
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+          LIMIT #{startrow}, #{fetchrow}
+        </if>
+        
+	</select>
+	
+	<!-- 운영자 ID 중복검사-->
+    <select id="chkInsertSuser" parameterType="apms.suser.model.SuserVo" resultType="apms.suser.model.SuserVo">
+		SELECT USER_ID
+		FROM TB_USER_INFO_SHIP
+		WHERE S_CODE = #{s_code}
+		AND USER_ID = #{addUserId}
+		AND DEL_FLAG = 'N'
+	</select>
+	
+	<!-- 운영자 추가 -->
+	<insert id="insertSuser" parameterType="apms.suser.model.SuserVo">
+		INSERT INTO TB_USER_INFO_SHIP (
+		USER_ID, 
+		PASSWD, 
+		USER_NAME, 
+		USER_GRADE, 
+		TEAM_NAME, 
+		PHONE, 
+		MOBILE, 
+		EMAIL, 
+		S_CODE, 
+		MODIFY_DATE, 
+		DEL_DATE
+		) VALUES (
+		#{addUserId},
+		SHA1(#{addUserPwd}),
+		#{addUserName},
+		#{addUserGrade},
+		'',
+		'',
+		'',
+		'',
+		#{s_code},
+		NOW(),
+		NOW()
+		)
+	</insert>
+	
+	<!-- 운영자 상세 정보-->
+    <select id="selectSuserInfo" parameterType="java.util.HashMap" resultType="apms.suser.model.SuserVo">
+		SELECT USER_ID, USER_NAME, USER_GRADE
+		FROM TB_USER_INFO_SHIP
+		WHERE S_CODE = #{s_code}
+		AND USER_ID = #{user_id}
+		AND DEL_FLAG = 'N'
+	</select>
+	
+	<!-- 운영자 수정 -->
+	<update id="updateSuser" parameterType="apms.suser.model.SuserVo">
+		UPDATE TB_USER_INFO_SHIP
+		<set>
+			<if test="cngPwd != null">PASSWD = SHA1(#{updUserPwd}),</if>
+			USER_NAME = #{updUserName},
+			USER_GRADE = #{updUserGrade},
+			TEAM_NAME='', PHONE='', MOBILE='', EMAIL='', DEL_FLAG='N', MODIFY_DATE=NOW(), GUI_FLAG='Y'
+		</set>	
+		WHERE USER_ID = #{updUserId}
+		AND S_CODE = #{s_code}
+	</update>
+	
+	<!-- 운영자 삭제 -->
+	<delete id="deleteSuser" parameterType="apms.suser.model.SuserVo">
+		DELETE FROM TB_USER_INFO_SHIP 
+		WHERE USER_ID = #{user_id}
+		AND S_CODE = #{s_code}
+	</delete>
+</mapper>

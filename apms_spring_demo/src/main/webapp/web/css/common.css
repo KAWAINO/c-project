@@ -1,0 +1,154 @@
+@charset "UTF-8";
+@media (min-width: 576px){
+.col-search-label {
+    flex: 0 0 auto;
+    width: 9.33333333%;
+  }
+
+.col-search-time-label {
+    flex: 0 0 auto;
+    width: 5%;
+    margin-left: -0.5rem !important;
+    margin-right: 0.7rem !important;
+}
+
+.col-search-time-range {
+	flex: 0 0 auto;
+    width: 3%;
+    margin-left: -2.6rem !important;
+}
+
+.col-search-date{
+	flex: 0 0 auto;
+	width: 35%;
+}
+
+.col-search-time{
+	flex: 0 0 auto;
+	width: 13.33333333%;
+	padding: 0px;
+}
+
+.col-modal-time-range {
+	flex: 0 0 auto;
+    width: 3%;
+    margin-right: 0.5rem !important;
+}
+
+.col-modal-date{
+	flex: 0 0 auto;
+	width: 25%;
+}
+
+.col-modal-time{
+	flex: 0 0 auto;
+	width: 35.5%;
+	padding: 0px;
+}
+
+.col-modal-time-label {
+    flex: 0 0 auto;
+    width: 5%;
+    margin-left: -0.5rem !important;
+    margin-right: 0.7rem !important;
+}
+
+.col-modal-date-label{
+	flex: 0 0 auto;
+    width: 12.5%;
+}
+
+.col-vertical-date-label{
+	flex: 0 0 auto;
+    width: 15.5%;
+}
+
+.col-vertical-date{
+	flex: 0 0 auto;
+	width: 28%;
+}
+
+.col-horizontal-date-label{
+	flex: 0 0 auto;
+    width: 8.5%;
+}
+
+.col-horizontal-date{
+	flex: 0 0 auto;
+	width: 23%;
+}
+
+.col-horizontal-time{
+	flex: 0 0 auto;
+	width: 6.5%;
+	padding: 0px;
+}
+
+.col-horizontal-time-label {
+    flex: 0 0 auto;
+    width: 5%;
+    margin-left: -0.2rem !important;
+}
+
+}
+
+.search-footer{
+	margin-bottom: -1rem !important;
+}
+
+.loading-background{
+	position:fixed;
+	width:100%;
+	height:100%;
+	z-index:9990;
+	background-color:rgba(0, 0, 0, 0.4);
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.loading-bar{
+	padding: 1.5rem !important;
+	position:absolute;
+	margin:auto;
+	width:25%;
+	top:50%;
+	left:50%;
+	transform: translate(-50%, -50%);
+}
+
+.left-table 
+table {table-layout:fixed;}
+
+.left-table .scroll-x {overflow-x:auto;}
+.left-table .scroll-y {overflow-y:auto;}
+
+.top-table 
+table {table-layout:fixed;}
+
+.top-table .scroll-x {overflow-x:auto;}
+.top-table .scroll-y {overflow-y:auto;}
+
+.top-table .fix-height {height:30%;}
+
+@media (min-width: 1080px){
+.btn-search {
+	width: 8%;
+}
+
+.btn-addel {
+	width: 41%;
+}
+
+.btn-modal{
+	width: 28%;
+}
+
+.btn-vertical{
+	width: 18%;
+}
+
+.btn-horizontal{
+	width: 11%;
+}
+
+}
