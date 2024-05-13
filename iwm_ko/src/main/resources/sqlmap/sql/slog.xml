@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.slog">
+
+	<!-- menuList 조회 -->
+	<select id="getMenuList" parameterType="iwm_ko.slog.model.SlogVo" resultType="iwm_ko.slog.model.SlogVo">
+		SELECT GUI_CODE
+			 , GUI_NAME
+			 , EN_GUI_NAME
+		  FROM TB_GUI_INFO_SHIP
+	</select>
+	
+	<!-- 선박명 조회 -->
+    <select id="selectShipList" parameterType="iwm_ko.slog.model.SlogVo" resultType="iwm_ko.slog.model.SlogVo">
+    	SELECT S_CODE
+    		 , S_NAME
+    	  FROM TB_SHIP_INFO
+    	 WHERE DEL_FLAG = 'N'
+		  <if test="searchCompId != null and searchCompId != ''">
+		   AND COMP_ID = #{ searchCompId }
+		  </if>
+    	 ORDER BY S_NAME
+    </select>
+    
+    <!-- 로그리스트 조회 -->
+    <select id="selectSlogList" parameterType="iwm_ko.slog.model.SlogVo" resultType="iwm_ko.slog.model.SlogVo">
+    	SELECT DATE_FORMAT(A.LOG_DATE, '%Y-%m-%d %H:%i:%s') LOG_DATE, A.COMP_NAME, A.S_NAME
+			 , A.USER_ID, B.USER_NAME, A.GUI_NAME, A.EN_GUI_NAME, A.JOB_NAME, A.GUI_REMARK
+		  FROM (
+			   	SELECT U.LOG_DATE
+			   		 , IFNULL(G.GUI_NAME, CASE WHEN U.JOB_NAME='로그인' THEN '로그인'
+											   WHEN U.JOB_NAME='로그아웃' THEN '로그아웃' ELSE '-' END) GUI_NAME
+					 , IFNULL(G.EN_GUI_NAME, CASE WHEN U.JOB_NAME='로그인' THEN 'Login'
+					            				  WHEN U.JOB_NAME='로그아웃' THEN 'Logout' ELSE '-' END) EN_GUI_NAME
+					 , U.GUI_CODE, U.JOB_NAME, U.GUI_REMARK, U.USER_ID, U.COMP_ID, U.S_NAME, U.COMP_NAME, U.S_CODE
+				  FROM (
+					    SELECT L.LOG_DATE, L.GUI_CODE, L.JOB_NAME, L.GUI_REMARK, L.USER_ID, V.COMP_ID, V.COMP_NAME, V.S_NAME, V.S_CODE
+					      FROM TB_USER_LOG_SHIP L, (
+												    SELECT C.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+												      FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+												     WHERE S.COMP_ID = C.COMP_ID
+					                                 ) V
+				         WHERE L.S_CODE = V.S_CODE
+			           ) U LEFT JOIN TB_GUI_INFO_SHIP G 
+		                     ON G.GUI_CODE = U.GUI_CODE
+		       ) A, TB_USER_INFO_SHIP B
+		 WHERE A.USER_ID = B.USER_ID
+	       AND A.S_CODE = B.S_CODE
+	       AND A.LOG_DATE BETWEEN STR_TO_DATE(#{startDate}, '%Y%m%d%H%i%s') 
+		   AND STR_TO_DATE(#{endDate}, '%Y%m%d%H%i%s')
+		   
+	  <if test="searchCompId != null and searchCompId != ''">
+	  	   AND A.COMP_ID = #{ searchCompId }
+	  </if>
+	  <if test="scomp != 0 and scomp != null">
+	  	   AND A.COMP_ID = #{ scomp }
+	  </if>
+	  <if test="searchUserName != null and searchUserName != ''">
+	  	   AND B.USER_NAME LIKE CONCAT('%', #{ searchUserName }, '%')
+	  </if>
+	  <if test="searchUserId != null and searchUserId != ''">
+	  	   AND A.USER_ID LIKE CONCAT('%', #{ searchUserId }, '%')
+	  </if>
+	  <if test="searchJobName != null and searchJobName != ''">
+	  	   AND A.JOB_NAME = #{ searchJobName }
+	  </if>
+	  <if test="searchGuiCode != null and searchGuiCode != ''">
+	  	   AND A.GUI_CODE = #{ searchGuiCode }
+	  </if>
+	  <if test="searchShipName != null and searchShipName != ''">
+	  	   AND A.S_CODE = #{ searchShipName }
+	  </if>
+		  
+		  ORDER BY A.LOG_DATE DESC
+		  
+		  <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+          	LIMIT #{startrow}, #{fetchrow}
+    	  </if>
+    </select>
+    
+    <!-- 페이징 -->
+	<select id="totalSlogList" parameterType="iwm_ko.slog.model.SlogVo" resultType="int">
+		SELECT COUNT(*)
+		  FROM (
+				SELECT DATE_FORMAT(A.LOG_DATE, '%Y-%m-%d %H:%i:%s') LOG_DATE, A.COMP_NAME, A.S_NAME
+				     , A.USER_ID, B.USER_NAME, A.GUI_NAME, A.JOB_NAME, A.GUI_REMARK
+				  FROM (
+				   		SELECT U.LOG_DATE
+				   			 , IFNULL(G.GUI_NAME, CASE WHEN U.JOB_NAME='로그인' THEN '로그인'
+											   		   WHEN U.JOB_NAME='로그아웃' THEN '로그아웃' ELSE '-' END) GUI_NAME
+				   			 , U.GUI_CODE, U.JOB_NAME, U.GUI_REMARK, U.USER_ID, U.COMP_ID, U.S_NAME, U.COMP_NAME, U.S_CODE
+				   		  FROM (
+							    SELECT L.LOG_DATE, L.GUI_CODE, L.JOB_NAME, L.GUI_REMARK, L.USER_ID, V.COMP_ID, V.COMP_NAME, V.S_NAME, V.S_CODE
+							      FROM TB_USER_LOG_SHIP L, (
+														    SELECT C.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+														    FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+														    WHERE S.COMP_ID=C.COMP_ID
+							   							   ) V
+				   			     WHERE L.S_CODE=V.S_CODE
+				               ) U LEFT JOIN TB_GUI_INFO_SHIP G
+				                    ON G.GUI_CODE=U.GUI_CODE
+				      )A, TB_USER_INFO_SHIP B
+			    WHERE A.USER_ID=B.USER_ID
+				  AND A.S_CODE=B.S_CODE
+				  AND A.LOG_DATE BETWEEN STR_TO_DATE(#{startDate}, '%Y%m%d%H%i%s') 
+		   		  AND STR_TO_DATE(#{endDate}, '%Y%m%d%H%i%s')
+				  
+			  <if test="searchCompId != null and searchCompId != ''">
+			  	  AND A.COMP_ID = #{ searchCompId }
+			  </if>
+		 	 <if test="scomp != 0 and scomp != null">
+			  	  AND A.COMP_ID = #{ scomp }
+			  </if>
+			  <if test="searchUserName != null and searchUserName != ''">
+			  	  AND B.USER_NAME LIKE CONCAT('%', #{ searchUserName }, '%')
+			  </if>
+			  <if test="searchUserId != null and searchUserId != ''">
+			  	  AND A.USER_ID LIKE CONCAT('%', #{ searchUserId }, '%')
+			  </if>
+			  <if test="searchJobName != null and searchJobName != ''">
+			  	  AND A.JOB_NAME = #{ searchJobName }
+			  </if>
+			  <if test="searchGuiCode != null and searchGuiCode != ''">
+			  	  AND A.GUI_CODE = #{ searchGuiCode }
+			  </if>
+			  <if test="searchShipName != null and searchShipName != ''">
+			  	  AND A.S_CODE = #{ searchShipName }
+			  </if>
+			  ) AS COUNT
+		ORDER BY LOG_DATE DESC
+	</select>
+
+</mapper>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.alarmHis">
+
+	<!-- 알람원인 리스트 조회 -->
+    <select id="getAlarmCauseList" parameterType="iwm_ko.alarmHis.model.AlarmHisVo" resultType="iwm_ko.alarmHis.model.AlarmHisVo">
+    	SELECT ALARM_ID, ALARM_NAME FROM TB_ALARM_ID
+    </select>
+    
+    <!-- 알람이력 리스트 조회 -->
+    <select id="getAlarmHisList" parameterType="iwm_ko.alarmHis.model.AlarmHisVo" resultType="iwm_ko.alarmHis.model.AlarmHisVo">
+    	SELECT DATE_FORMAT(STR_TO_DATE(EVT_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') EVT_TIME
+    		 , AID
+		     , (CASE WHEN SEVERITY = 'C' THEN 'CRITICAL' 
+		  		     WHEN SEVERITY = 'M' THEN 'MAJOR' 
+					 WHEN SEVERITY = 'N' THEN 'MINOR' END) SEVERITY
+		     , CONCAT(CASE WHEN LOC_A = 'OWM' THEN FNC_GET_SNAME(LOC_B) ELSE IFNULL(LOC_B,'') END,			   
+					  CASE WHEN LOC_C IS NOT NULL THEN CONCAT(', ', LOC_C) ELSE '' END) LOC
+		     , ALARM_STR
+		     , DATE_FORMAT(STR_TO_DATE(FIRST_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') FIRST_TIME
+		     , DUP_CNT
+		     , (CASE WHEN CLR_FLAG = 'M' THEN 'User clear'  
+		  	         WHEN CLR_FLAG = 'A' THEN 'Auto clear' END) CLR_FLAG
+		     , DATE_FORMAT(STR_TO_DATE(CLR_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') CLR_TIME
+		     , CLR_USER
+	      FROM TB_ALARM_SYS_HIS
+	     WHERE EVT_TIME BETWEEN #{ startDate } AND #{ endDate }
+	     
+	      <if test="searchAlarmCause != null and searchAlarmCause != ''">
+	  	   AND AID = #{ searchAlarmCause }
+	      </if>
+	      <if test="comp_id != 0">
+	  	   AND LOC_B IN ( 
+	  	   				 SELECT CC.S_CODE FROM TB_SCOMP_INFO BB, TB_SHIP_INFO CC
+						  WHERE BB.COMP_ID = CC.COMP_ID 
+							AND BB.COMP_ID = #{ comp_id }
+						)
+	      </if>
+	     
+	     ORDER BY EVT_TIME DESC
+	     
+	  <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+        LIMIT #{startrow}, #{fetchrow}
+   	  </if> 
+    </select>
+    
+    <!-- 페이징 -->
+    <select id="totalAlarmHisList" parameterType="iwm_ko.alarmHis.model.AlarmHisVo" resultType="int">
+    	SELECT COUNT(*)
+	      FROM (
+		    	SELECT DATE_FORMAT(STR_TO_DATE(EVT_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') EVT_TIME
+		    		 , AID
+				     , (CASE WHEN SEVERITY = 'C' THEN 'CRITICAL' 
+				  		     WHEN SEVERITY = 'M' THEN 'MAJOR' 
+							 WHEN SEVERITY = 'N' THEN 'MINOR' END) SEVERITY
+				     , CONCAT(CASE WHEN LOC_A = 'OWM' THEN FNC_GET_SNAME(LOC_B) ELSE IFNULL(LOC_B,'') END,			   
+							  CASE WHEN LOC_C IS NOT NULL THEN CONCAT(', ', LOC_C) ELSE '' END) LOC
+				     , ALARM_STR
+				     , DATE_FORMAT(STR_TO_DATE(FIRST_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') FIRST_TIME
+				     , DUP_CNT
+				     , (CASE WHEN CLR_FLAG = 'M' THEN 'User clear'  
+				  	         WHEN CLR_FLAG = 'A' THEN 'Auto clear' END) CLR_FLAG
+				     , DATE_FORMAT(STR_TO_DATE(CLR_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') CLR_TIME
+				     , CLR_USER
+			      FROM TB_ALARM_SYS_HIS
+			     WHERE EVT_TIME BETWEEN #{ startDate } AND #{ endDate }
+			     
+			      <if test="searchAlarmCause != null and searchAlarmCause != ''">
+			  	   AND AID = #{ searchAlarmCause }
+			      </if>
+			      <if test="comp_id != 0">
+			  	   AND LOC_B IN ( 
+			  	   				 SELECT CC.S_CODE FROM TB_SCOMP_INFO BB, TB_SHIP_INFO CC
+								  WHERE BB.COMP_ID = CC.COMP_ID 
+									AND BB.COMP_ID = #{ comp_id }
+								)
+			      </if>
+	     	   )AS COUNT
+	     ORDER BY EVT_TIME DESC
+    </select>
+
+</mapper>

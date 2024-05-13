@@ -1,0 +1,848 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.crewInfo">
+
+
+    <select id="selectCrewInfoList" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        A.CREW_ID AS crew_id, A.CREW_NAME AS crew_name, A.COMP_NAME AS comp_name, A.S_NAME AS s_name, A.S_CODE AS s_code,
+        B.CREW_STATUS AS crew_status, B.ACC_USE_DAY AS acc_use_day, B.ACC_USE_MONTH AS acc_use_month,
+        A.AMT_TOTAL_MONTH AS amt_total_month, A.C_LIMIT_DAY_AMT AS limit_day_amt, A.C_LIMIT_CONT_AMT AS limit_cont_amt, A.C_LIMIT_CONT_TIME AS limit_cont_time,
+        A.C_TIME_FROM AS time_from, A.C_TIME_TO AS time_to, A.C_APPLY_DAY AS apply_day, A.C_DAY_FROM AS day_from, A.C_DAY_TO AS day_to,
+        A.C_TIME_FROM2 AS time_from2, A.C_TIME_TO2 AS time_to2,
+        A.C_TIME_FROM3 AS time_from3, A.C_TIME_TO3 AS time_to3, A.RATE_NAME AS rate_name, A.WIFI_CONN AS wifi_conn,
+        B.ADD_REMAIN AS add_remain,
+        CASE WHEN TRIM(IFNULL(A.VAL2, 'N')) ='Y' THEN 'Y' ELSE 'N' END AS val2
+        from (
+        select B.CREW_ID, B.CREW_NAME, A.COMP_NAME, A.COMP_ID, A.S_NAME, A.S_CODE, B.AMT_TOTAL_MONTH, B.C_LIMIT_DAY_AMT, B.C_LIMIT_CONT_AMT, B.C_LIMIT_CONT_TIME, B.C_TIME_FROM, B.C_TIME_TO,
+        B.C_APPLY_DAY,B.C_DAY_FROM, B.C_DAY_TO, B.C_TIME_FROM2, B.C_TIME_TO2, B.C_TIME_FROM3, B.C_TIME_TO3, B.DEL_FLAG, B.RATE_NAME, D.WIFI_CONN, D.VAL2
+        from (
+        select S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+        from TB_SHIP_INFO S, TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        )A, TB_CREW_INFO B
+        left join TB_CREW_INFO_SUB D
+        on B.CREW_ID=D.CREW_ID
+        and B.S_CODE=D.S_CODE
+        where A.S_CODE=B.S_CODE
+        )A left join TB_CREW_STATUS B
+        on A.CREW_ID=B.CREW_ID
+        and A.S_CODE=B.S_CODE
+        where A.DEL_FLAG='N'
+
+        <!-- 검색  -->
+        <if test="sessionCompId != 0">
+            AND A.COMP_ID = #{sessionCompId}
+        </if>
+        <if test="searchSName != null and searchSName != ''">
+            AND A.S_NAME LIKE CONCAT ('%',#{searchSName},'%')
+        </if>
+        <if test="searchCompId != null and searchCompId != ''">
+            AND A.COMP_ID = #{searchCompId}
+        </if>
+
+        <if test="searchIdName != null and searchIdName != ''">
+            AND (
+            A.CREW_NAME LIKE CONCAT('%',#{searchIdName},'%')
+            OR A.CREW_ID LIKE CONCAT('%',#{searchIdName},'%')
+            )
+        </if>
+        order by A.COMP_NAME, A.S_NAME, A.CREW_NAME, A.CREW_ID
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+
+    </select>
+
+    <select id="selectShipCompList" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select COMP_ID AS comp_id , COMP_NAME AS comp_name
+        from TB_SCOMP_INFO where DEL_FLAG='N'
+        <if test="sessionCompId != 0">
+            AND COMP_ID = #{sessionCompId}
+        </if>
+        ORDER BY COMP_NAME
+
+    </select>
+
+
+    <select id="selectCrewInfoCount" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        A.CREW_ID AS crew_id, A.CREW_NAME AS crew_name, A.COMP_NAME AS comp_name, A.S_NAME AS s_name, A.S_CODE AS s_code,
+        B.CREW_STATUS AS crew_status, B.ACC_USE_DAY AS acc_use_day, B.ACC_USE_MONTH AS acc_use_month,
+        A.AMT_TOTAL_MONTH AS amt_total_month, A.C_LIMIT_DAY_AMT AS limit_day_amt, A.C_LIMIT_CONT_AMT AS limit_cont_amt, A.C_LIMIT_CONT_TIME AS limit_cont_time,
+        A.C_TIME_FROM AS time_from, A.C_TIME_TO AS time_to, A.C_APPLY_DAY AS apply_day, A.C_DAY_FROM AS day_from, A.C_DAY_TO AS day_to,
+        A.C_TIME_FROM2 AS time_from2, A.C_TIME_TO2 AS time_to2,
+        A.C_TIME_FROM3 AS time_from3, A.C_TIME_TO3 AS time_to3, A.RATE_NAME AS rate_name, A.WIFI_CONN AS wifi_conn,
+        B.ADD_REMAIN AS add_remain,
+        CASE WHEN TRIM(IFNULL(A.VAL2, 'N')) ='Y' THEN 'Y' ELSE 'N' END AS val2
+        from (
+        select B.CREW_ID, B.CREW_NAME, A.COMP_NAME, A.COMP_ID, A.S_NAME, A.S_CODE, B.AMT_TOTAL_MONTH, B.C_LIMIT_DAY_AMT, B.C_LIMIT_CONT_AMT, B.C_LIMIT_CONT_TIME, B.C_TIME_FROM, B.C_TIME_TO,
+        B.C_APPLY_DAY,B.C_DAY_FROM, B.C_DAY_TO, B.C_TIME_FROM2, B.C_TIME_TO2, B.C_TIME_FROM3, B.C_TIME_TO3, B.DEL_FLAG, B.RATE_NAME, D.WIFI_CONN, D.VAL2
+        from (
+        select S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+        from TB_SHIP_INFO S, TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        )A, TB_CREW_INFO B
+        left join TB_CREW_INFO_SUB D
+        on B.CREW_ID=D.CREW_ID
+        and B.S_CODE=D.S_CODE
+        where A.S_CODE=B.S_CODE
+        )A left join TB_CREW_STATUS B
+        on A.CREW_ID=B.CREW_ID
+        and A.S_CODE=B.S_CODE
+        where A.DEL_FLAG='N'
+
+        <!-- 검색  -->
+        <if test="sessionCompId != 0">
+            AND A.COMP_ID = #{sessionCompId}
+        </if>
+        <if test="searchSName != null and searchSName != ''">
+            AND A.S_NAME LIKE CONCAT ('%',#{searchSName},'%')
+        </if>
+        <if test="searchCompId != null and searchCompId != ''">
+            AND A.COMP_ID = #{searchCompId}
+        </if>
+
+        <if test="searchIdName != null and searchIdName != ''">
+            AND (
+            A.CREW_NAME LIKE CONCAT('%',#{searchIdName},'%')
+            OR A.CREW_ID LIKE CONCAT('%',#{searchIdName},'%')
+            )
+        </if>
+        order by A.COMP_NAME, A.S_NAME, A.CREW_NAME, A.CREW_ID
+
+
+    </select>
+
+
+    <!--중복검사-->
+    <select id="chkCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+        select
+        CREW_ID
+        from TB_CREW_INFO
+        where CREW_ID=#{addCrewId}
+        and S_CODE =  #{addSName}
+        and DEL_FLAG='N'
+    </select>
+
+
+
+
+    <!--  추가 -->
+    <insert id="insertCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        insert
+        into TB_CREW_INFO
+        ( S_CODE, CREW_ID, PASSWD, CREW_NAME, AMT_TOTAL_MONTH, C_LIMIT_DAY_AMT, C_LIMIT_CONT_AMT, C_LIMIT_CONT_TIME, C_TIME_FROM, C_TIME_TO,
+        C_APPLY_DAY, C_DAY_FROM, C_DAY_TO, C_TIME_FROM2, C_TIME_TO2, C_TIME_FROM3, C_TIME_TO3, RATE_NAME, MODIFY_DATE, DEL_DATE ) values
+        (#{addSName}, #{addCrewId}, SHA(#{addPw}), #{addCrewName}, #{addMonth}, #{addDay}, #{addUse}, #{addMin}, #{addTimeFrom}, #{addTimeTo},
+        #{addApplyDays}, #{addDayFrom}, #{addDayTo}, #{addTimeFrom2}, #{addTimeTo2}, #{addTimeFrom3}, #{addTimeTo3}, #{addRdata} , NOW(), NOW())
+
+    </insert>
+
+    <!-- chkFlag 'N'의 경우 업데이트 방식 등록 -->
+    <update id="updateInsertCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        update TB_CREW_INFO A
+        LEFT JOIN
+        TB_CREW_INFO_SUB B
+        on
+        A.S_CODE = B.S_CODE AND A.CREW_ID = B.CREW_ID
+        set
+        B.VAL2= #{addVal2},
+        A.S_CODE=#{addSName},
+        A.PASSWD=SHA(#{addPw}),
+        A.CREW_NAME=#{addCrewName},
+        A.AMT_TOTAL_MONTH=#{addMonth} ,
+        A.C_LIMIT_DAY_AMT=#{addDay},
+        A.C_LIMIT_CONT_AMT=#{addUse},
+        A.C_LIMIT_CONT_TIME=#{addMin} ,
+        A.C_TIME_FROM=#{addTimeFrom},
+        A.C_TIME_TO=#{addTimeTo},
+        A.C_APPLY_DAY=#{addApplyDays},
+        A.C_DAY_FROM=#{addDayFrom},
+        A.C_DAY_TO=#{addDayTo} ,
+        A.DEL_FLAG='N',
+        A.MODIFY_DATE=NOW(),
+        A.GUI_FLAG='Y',
+        A.C_TIME_FROM2=#{addTImeFrom2},
+        A.C_TIME_TO2=#{addTimeTo2},
+        A.C_TIME_FROM3=#{addTimeFrom3},
+        A.C_TIME_TO3=#{addTimeTo3},
+        A.RATE_NAME=#{addRdata}
+        where
+        A.CREW_ID=#{addCrewId} and A.S_CODE=#{addSName}
+
+    </update>
+
+
+    <!--  추가 -->
+    <insert id="insertSubCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        insert into TB_CREW_INFO_SUB
+        ( S_CODE, CREW_ID, WIFI_CONN, VAL1, VAL2 )
+        values
+        ( #{addSName}, #{addCrewId}, "1", "", #{addVal2} )
+
+    </insert>
+
+
+    <!--  상세 정보-->
+    <select id="selectCrewInfo" parameterType="java.util.HashMap" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select H.*, R.ACC_USE_MONTH AS acc_use_month, R.ADD_REMAIN AS add_remain
+         from
+        ( select
+        B.CREW_ID AS crew_id,
+        B.CREW_NAME AS crew_name,
+        A.COMP_ID AS comp_id,
+        A.COMP_NAME AS comp_name,
+        A.S_NAME AS s_name,
+        A.S_CODE AS s_code,
+        B.AMT_TOTAL_MONTH AS amt_total_month,
+        B.C_LIMIT_DAY_AMT AS limit_day_amt,
+        B.C_LIMIT_CONT_AMT AS limit_cont_amt,
+        B.C_LIMIT_CONT_TIME  AS limit_cont_time,
+        B.C_TIME_FROM AS time_from,
+        B.C_TIME_TO AS time_to,
+        B.C_APPLY_DAY AS apply_day,
+        C_DAY_FROM AS day_from,
+        C_DAY_TO AS day_to,
+        B.C_TIME_FROM2 AS time_from2,
+        B.C_TIME_TO2 AS time_to2,
+        B.C_TIME_FROM3 AS time_from3,
+        B.C_TIME_TO3 AS time_to3,
+        B.RATE_NAME AS rate_name,
+        CASE WHEN TRIM(IFNULL(D.VAL2, 'N')) = 'Y' THEN 'Y' ELSE 'N' END AS val2
+        from (
+        select S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+        from TB_SHIP_INFO S, TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        )A, TB_CREW_INFO B left join TB_CREW_INFO_SUB D
+        on B.S_CODE = D.S_CODE
+        and B.CREW_ID = D.CREW_ID
+        where A.S_CODE=B.S_CODE
+        and DEL_FLAG='N') H left join TB_CREW_STATUS R
+        on H.CREW_ID=R.CREW_ID
+        and H.S_CODE=R.S_CODE
+        where
+        H.CREW_ID=#{crew_id}
+        and
+        H.S_CODE=#{s_code}
+
+
+    </select>
+
+    <select id="selectRdataList" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        RATE_NAME AS rate_name
+        from
+        TB_CREW_RATE
+        where S_CODE= #{s_code}
+        order by RATE_NAME
+
+    </select>
+
+
+    <!--Sub중복검사-->
+    <select id="chkSubCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+        select
+        CREW_ID
+        from
+        TB_CREW_INFO_SUB
+        where
+        S_CODE=#{addSName}
+        and CREW_ID= #{addCrewId}
+
+    </select>
+
+
+    <!-- chkFlag -->
+    <select id="chkFlag" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="String">
+
+        select
+        DEL_FLAG
+        from
+        TB_CREW_INFO
+        where CREW_ID=#{addCrewId}
+        and
+        S_CODE=#{addSName}
+
+    </select>
+
+
+    <!-- 수정 -->
+    <update id="updateCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        update TB_CREW_INFO A LEFT JOIN TB_CREW_INFO_SUB B
+         ON A.S_CODE = B.S_CODE AND A.CREW_ID = B.CREW_ID
+         set A.S_CODE=#{u_updSCode},
+
+        <if test="changePw != null ">
+            PASSWD = SHA(#{updPw}),
+        </if>
+
+        A.CREW_NAME=#{updCrewName},
+        A.AMT_TOTAL_MONTH=#{updMonth} ,
+        A.C_LIMIT_DAY_AMT=#{updDay},
+        A.C_LIMIT_CONT_AMT=#{updUse},
+        A.C_LIMIT_CONT_TIME=#{updMin},
+        A.C_TIME_FROM=#{updTimeFrom} ,
+        A.C_TIME_TO=#{updTimeTo},
+        A.C_APPLY_DAY=#{updApplyDays},
+        A.C_DAY_FROM=#{updDayFrom},
+        A.C_DAY_TO=#{updDayTo},
+        A.C_TIME_FROM2=#{updTimeFrom2},
+        A.C_TIME_TO2=#{updTimeTo2},
+        A.C_TIME_FROM3=#{updTimeFrom3},
+        A.C_TIME_TO3=#{updTimeTo3},
+        A.RATE_NAME=#{updRdata} ,
+        B.VAL2=#{updVal2} ,
+        A.MODIFY_DATE=NOW(),
+        A.GUI_FLAG='Y'
+        where
+        A.CREW_ID=#{u_updCrewId}
+        and
+        A.S_CODE=#{u_updSCode}
+    </update>
+
+    <!-- 삭제 -->
+    <update id="deleteCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        update
+        TB_CREW_INFO
+        set
+        DEL_FLAG='Y',
+        DEL_DATE=NOW(),
+        GUI_FLAG='Y'
+        where
+        CREW_ID=#{updCrewId}
+        and
+        S_CODE=#{s_code}
+    </update>
+
+    <!-- 선박명 조회 -->
+    <select id="selectShipNameList" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        SELECT S_NAME AS ship_name, S_CODE AS s_code
+        FROM TB_SHIP_INFO
+        WHERE COMP_ID = #{comp_id}
+        AND DEL_FLAG='N'
+        ORDER BY S_NAME
+
+    </select>
+
+
+    <!-- val1 -->
+    <select id="selectVal1FromCrewInfoSub" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="String">
+
+        select
+        VAL1
+        from TB_CREW_INFO_SUB
+        where
+        CREW_ID=#{crew_id}
+        and
+        S_CODE=#{s_code}
+
+    </select>
+
+    <select id="selectRateNameList" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+        select
+        RATE_NAME AS rate_name
+        from
+        TB_CREW_RATE
+        where S_CODE= #{s_name}
+        order by RATE_NAME
+    </select>
+    <select id="selectCrewIdList" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        CREW_ID AS crew_id
+        from TB_CREW_INFO
+        where
+        DEL_FLAG='N'
+        and S_CODE=#{s_name}
+        order
+        by CREW_ID
+
+    </select>
+
+    <!-- Rate -->
+    <select id="getRateInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        AMT_TOTAL_MONTH AS amt_total_month,
+        C_LIMIT_DAY_AMT AS limit_day_amt,
+        C_LIMIT_CONT_AMT AS limit_cont_amt,
+        C_LIMIT_CONT_TIME AS limit_cont_time,
+        C_TIME_FROM AS time_from,
+        C_TIME_TO AS time_to,
+        C_APPLY_DAY AS apply_day,
+        C_DAY_FROM AS day_from,
+        C_DAY_TO AS day_to,
+        C_TIME_FROM2 AS time_from2,
+        C_TIME_TO2 AS time_to2,
+        C_TIME_FROM3 AS time_from3,
+        C_TIME_TO3 AS time_to3
+        from TB_CREW_RATE
+        where
+        RATE_NAME=#{rate_name}
+        and
+        S_CODE=#{s_code}
+    </select>
+
+    <!-- 수정 -->
+    <update id="updateCrewInfoDefault" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+     update
+        TB_CREW_INFO
+        set
+        AMT_TOTAL_MONTH=#{amt_total_month},
+        C_LIMIT_DAY_AMT=#{limit_day_amt},
+        C_LIMIT_CONT_AMT=#{limit_cont_amt},
+        C_LIMIT_CONT_TIME=#{limit_cont_time},
+        C_TIME_FROM=#{time_from},
+        C_TIME_TO=#{time_to},
+        C_TIME_FROM2=#{time_from2},
+        C_TIME_TO2=#{time_to2},
+        C_TIME_FROM3=#{time_from3},
+        C_TIME_TO3=#{time_to3},
+        C_APPLY_DAY=#{apply_day},
+        C_DAY_FROM=#{day_from},
+        C_DAY_TO=#{day_to},
+        RATE_NAME=#{rate_name},
+        GUI_FLAG='Y'
+        where
+        CREW_ID=#{crew_id}
+        and
+        S_CODE=#{s_code}
+    </update>
+
+    <!-- VAL1 기본값 업데이트 -->
+    <update id="updateDefaultVal1" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        update
+        TB_CREW_INFO_SUB
+        set VAL1=#{allRdata},
+        GUI_FLAG='Y'
+        where CREW_ID in
+        <foreach item="item" index="index" collection="selectedCrewIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and S_CODE=#{allSCode}
+    </update>
+
+    <!-- val1 -->
+    <select id="getDefaultRate" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="String">
+
+        select
+        RATE_NAME
+        from
+        TB_CREW_INFO
+        where
+        S_CODE=#{allSCode}
+        and
+        CREW_ID=#{updCrewId}
+
+    </select>
+
+    <!-- rateName 선택시 -->
+    <select id="selectValList" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        AMT_TOTAL_MONTH AS amt_total_month, C_LIMIT_DAY_AMT AS limit_day_amt, C_LIMIT_CONT_AMT AS limit_cont_amt, C_LIMIT_CONT_TIME AS limit_cont_time,
+        C_TIME_FROM AS time_from, C_TIME_TO AS time_to, C_TIME_FROM2 AS time_from2, C_TIME_TO2 AS time_to2, C_TIME_FROM3 AS time_from3,
+        C_TIME_TO3 AS time_to3, C_APPLY_DAY AS apply_day, C_DAY_FROM AS day_from, C_DAY_TO AS day_to
+        from
+        TB_CREW_RATE
+        where
+        S_CODE=#{s_code}
+        and
+        RATE_NAME=#{rate_name}
+
+    </select>
+
+
+    <!-- sub체크 -->
+    <select id="checkSubData" parameterType="map" resultType="string">
+
+        select CREW_ID
+        from
+        TB_CREW_INFO_SUB
+        where
+        S_CODE=#{s_code}
+        and
+        CREW_ID=#{crew_id}
+
+    </select>
+
+    <!-- 수정 -->
+    <update id="updateAllWifi" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        update
+        TB_CREW_INFO_SUB
+        set
+        WIFI_CONN=#{cs_data},
+        GUI_FLAG='Y'
+        where
+        CREW_ID
+        in
+        <foreach item="item" index="index" collection="selectedCrewIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and S_CODE=#{allSCode}
+    </update>
+
+
+    <!-- 수정 -->
+    <update id="updateAllRate" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+
+        UPDATE TB_CREW_INFO set
+        AMT_TOTAL_MONTH =#{amt_total_month}, C_LIMIT_DAY_AMT = #{limit_day_amt}, C_LIMIT_CONT_AMT = #{limit_cont_amt}, C_LIMIT_CONT_TIME = #{limit_cont_time},
+        C_TIME_FROM = #{time_from}, C_TIME_FROM2 = #{time_from2}, C_TIME_FROM3 = #{time_from3}, C_TIME_TO = #{time_to}, C_TIME_TO2 = #{time_to2}, C_TIME_TO3 = #{time_to3},
+        C_APPLY_DAY = #{apply_day}, C_DAY_FROM = #{day_from}, C_DAY_TO = #{day_to}, RATE_NAME = #{rate_name},
+        GUI_FLAG="Y"
+        where CREW_ID in
+        <foreach item="item" index="index" collection="selectedCrewIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and
+        S_CODE = #{allSCode}
+    </update>
+
+    <select id="chkSubData" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        CREW_ID
+        from
+        TB_CREW_INFO_SUB
+        where
+        S_CODE=#{allSCode}
+        and
+        CREW_ID=#{updCrewId}
+
+    </select>
+
+
+    <!-- val1 -->
+    <select id="getVal1" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="String">
+        select
+        VAL1
+        from
+        TB_CREW_INFO_SUB
+        where
+        CREW_ID=#{updCrewId}
+        and
+        S_CODE=#{allSCode}
+    </select>
+
+
+    <!-- 수정 -->
+    <update id="allDefault" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        update
+        TB_CREW_INFO
+        set
+        AMT_TOTAL_MONTH=#{amt_total_month} , C_LIMIT_DAY_AMT = #{limit_day_amt}, C_LIMIT_CONT_AMT = #{limit_cont_amt}, C_LIMIT_CONT_TIME = #{limit_cont_time},
+        C_TIME_FROM = #{time_from}, C_TIME_FROM2 = #{time_from2}, C_TIME_FROM3 = #{time_from3}, C_TIME_TO = #{time_to}, C_TIME_TO2 = #{time_to2}, C_TIME_TO3 = #{time_to3},
+        C_APPLY_DAY = #{apply_day}, C_DAY_FROM = #{day_from}, C_DAY_TO = #{day_to}, RATE_NAME = #{rate_name}, GUI_FLAG='Y'
+        where CREW_ID = #{updCrewId}
+        and
+        S_CODE = #{allSCode}
+
+    </update>
+    <!-- 수정 -->
+    <update id="updateAllVal2" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        update
+        TB_CREW_INFO_SUB
+        set
+        VAL2=#{allVal2},
+        GUI_FLAG='Y'
+        where
+        CREW_ID
+        in
+        <foreach item="item" index="index" collection="selectedCrewIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and S_CODE=#{allSCode}
+    </update>
+
+
+
+    <!-- 엑셀 업로드 -->
+
+    <update id="delPreData">
+        update
+        TB_CREW_INFO
+        set
+        DEL_FLAG='Y',
+        DEL_DATE=NOW()
+        where
+        DEL_FLAG='N'
+
+    </update>
+
+    <!-- 엑셀 업로드 s_code 조회 -->
+    <select id="getShipCode" parameterType="String" resultType="String">
+        select
+        S_CODE
+        from
+        TB_SHIP_INFO
+        where
+        S_NAME=#{s_name}
+    </select>
+
+    <!-- selectCheckCrewId -->
+    <select id="selectCheckCrewId" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+        select
+        CREW_ID
+        from
+        TB_CREW_INFO
+        where
+        CREW_ID=#{crew_id}
+        and
+        S_CODE=#{s_code}
+        and
+        DEL_FLAG='N'
+    </select>
+
+    <!-- selectCheckCrewId -->
+    <select id="checkCrewFlag" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="String">
+        select
+        DEL_FLAG
+        from
+        TB_CREW_INFO
+        where
+        CREW_ID=#{crew_id}
+        and
+        S_CODE=#{s_code}
+    </select>
+
+    <!-- 엑셀 업로드 수정  -->
+    <update id="updateExcelCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+
+        update
+        TB_CREW_INFO
+        set
+        S_CODE=#{s_code}, CREW_ID=#{crew_id}, PASSWD=SHA1(#{addPw}), CREW_NAME=#{crew_name}, AMT_TOTAL_MONTH=#{amt_total_month},
+        C_LIMIT_DAY_AMT=#{limit_day_amt}, C_LIMIT_CONT_AMT=#{limit_cont_amt}, C_LIMIT_CONT_TIME=#{limit_cont_time}, C_TIME_FROM=#{time_from}, C_TIME_TO=#{time_to},
+        C_TIME_FROM2=#{time_from2}, C_TIME_TO2=#{time_to2}, C_TIME_FROM3=#{time_from3}, C_TIME_TO3=#{time_to3}, C_APPLY_DAY=#{apply_day}, C_DAY_FROM=#{day_from},
+        C_DAY_TO=#{day_to}, RATE_NAME=#{rate_name},
+        DEL_FLAG='N', MODIFY_DATE=NOW(), GUI_FLAG='Y'
+        where
+        CREW_ID=#{crew_id} and S_CODE=#{s_code}
+
+    </update>
+
+
+    <!--  추가 -->
+    <insert id="insertExcelCrewInfo" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        insert
+        into
+        TB_CREW_INFO
+        ( S_CODE, CREW_ID, PASSWD, CREW_NAME, AMT_TOTAL_MONTH, C_LIMIT_DAY_AMT, C_LIMIT_CONT_AMT, C_LIMIT_CONT_TIME,
+        C_TIME_FROM, C_TIME_TO, C_TIME_FROM2, C_TIME_TO2, C_TIME_FROM3, C_TIME_TO3, C_APPLY_DAY,
+        C_DAY_FROM, C_DAY_TO, RATE_NAME, MODIFY_DATE, DEL_DATE )
+        values
+        (#{s_code}, #{crew_id}, SHA1(#{addPw}), #{crew_name}, #{amt_total_month}, #{limit_day_amt}, #{limit_cont_amt}, #{limit_cont_time},
+        #{time_from}, #{time_to}, #{time_from2}, #{time_to2}, #{time_from3}, #{time_to3}, #{apply_day}, #{day_from}, #{day_to}, #{rate_name}, NOW(), NOW() )
+
+    </insert>
+
+
+    <!-- possm 일괄적용 chkScode -->
+    <select id="chkScode" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select S_NAME from TB_SHIP_INFO
+        where
+        S_CODE=#{cs_code}
+        and
+        COMP_ID=#{sessionCompId}
+
+    </select>
+
+    <!-- possm 일괄적용 checkRateName -->
+    <select id="checkRateName" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        RATE_NAME
+        from
+        TB_CREW_RATE
+        where
+        RATE_NAME=#{rate_name}
+        and S_CODE=#{s_code}
+    </select>
+
+
+
+
+    <insert id="insertCrewRate" parameterType="String">
+        insert
+        into
+        TB_CREW_RATE
+        ( S_CODE, RATE_NAME, AMT_TOTAL_MONTH , C_LIMIT_DAY_AMT, C_LIMIT_CONT_AMT, C_LIMIT_CONT_TIME, C_TIME_FROM, C_TIME_TO,
+        C_APPLY_DAY, C_DAY_FROM, C_DAY_TO, C_TIME_FROM2, C_TIME_TO2, C_TIME_FROM3, C_TIME_TO3 )
+        values (${rateData} )
+
+    </insert>
+
+
+    <!-- possm 일괄적용 checkCrewName -->
+    <select id="checkCrewName" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        CREW_ID
+        from
+        TB_CREW_INFO
+        where
+        CREW_ID=#{crewNameCrewId}
+        and
+        S_CODE=#{crewNameSCode}
+        and
+        DEL_FLAG='N'
+
+    </select>
+
+    <update id="updateCrewRate">
+        UPDATE TB_CREW_RATE
+        SET GUI_FLAG = 'Y',
+        S_CODE = REPLACE(#{arrayRate[0]}, '''', ''),
+        AMT_TOTAL_MONTH = REPLACE(#{arrayRate[2]}, '''', ''),
+        C_LIMIT_DAY_AMT = REPLACE(#{arrayRate[3]}, '''', ''),
+        C_LIMIT_CONT_AMT = REPLACE(#{arrayRate[4]}, '''', ''),
+        C_LIMIT_CONT_TIME = REPLACE(#{arrayRate[5]}, '''', ''),
+        C_TIME_FROM = REPLACE(#{arrayRate[6]}, '''', ''),
+        C_TIME_TO = REPLACE(#{arrayRate[7]}, '''', ''),
+        C_APPLY_DAY = REPLACE(#{arrayRate[8]}, '''', ''),
+        C_DAY_FROM = REPLACE(#{arrayRate[9]}, '''', ''),
+        C_DAY_TO = REPLACE(#{arrayRate[10]}, '''', ''),
+        C_TIME_FROM2 = REPLACE(#{arrayRate[11]}, '''', ''),
+        C_TIME_TO2 = REPLACE(#{arrayRate[12]}, '''', ''),
+        C_TIME_FROM3 = REPLACE(#{arrayRate[13]}, '''', ''),
+        C_TIME_TO3 = REPLACE(#{arrayRate[14]}, '''', '')
+
+        WHERE RATE_NAME = REPLACE(#{arrayRate[1]}, '''', '')
+        AND S_CODE = REPLACE(#{arrayRate[0]}, '''', '')
+    </update>
+
+
+
+
+    <!-- 수정 -->
+
+
+    <update id="updateCrewName">
+
+        UPDATE TB_CREW_INFO
+        SET
+        S_CODE = REPLACE(#{arrayCrew[0]}, '''', ''),
+        PASSWD = SHA(REPLACE(#{arrayCrew[2]},'''','')),
+        CREW_NAME = REPLACE(#{arrayCrew[3]},'''',''),
+        AMT_TOTAL_MONTH = REPLACE(#{arrayCrew[4]},'''',''),
+        C_LIMIT_DAY_AMT = REPLACE(#{arrayCrew[5]},'''',''),
+        C_LIMIT_CONT_AMT = REPLACE(#{arrayCrew[6]},'''',''),
+        C_LIMIT_CONT_TIME = REPLACE(#{arrayCrew[7]},'''',''),
+        C_TIME_FROM = REPLACE(#{arrayCrew[8]},'''',''),
+        C_TIME_TO = REPLACE(#{arrayCrew[9]},'''',''),
+        C_APPLY_DAY = REPLACE(#{arrayCrew[10]},'''',''),
+        C_DAY_FROM = REPLACE(#{arrayCrew[11]},'''',''),
+        C_DAY_TO = REPLACE(#{arrayCrew[12]},'''',''),
+        DEL_FLAG = 'N',MODIFY_DATE=NOW(), GUI_FLAG='Y',
+        C_TIME_FROM2 = REPLACE(#{arrayCrew[13]},'''',''),
+        C_TIME_TO2 = REPLACE(#{arrayCrew[14]},'''',''),
+        C_TIME_FROM3 = REPLACE(#{arrayCrew[15]},'''',''),
+        C_TIME_TO3 = REPLACE(#{arrayCrew[16]},'''',''),
+        RATE_NAME = REPLACE(#{arrayCrew[17]},'''','')
+
+        WHERE CREW_ID = REPLACE(#{arrayCrew[1]}, '''', '')
+        AND S_CODE = REPLACE(#{arrayCrew[0]}, '''', '')
+
+    </update>
+
+
+    <insert id="insertCrewName" >
+        insert
+        into
+        TB_CREW_INFO
+        ( S_CODE, CREW_ID, PASSWD, CREW_NAME, AMT_TOTAL_MONTH, C_LIMIT_DAY_AMT, C_LIMIT_CONT_AMT, C_LIMIT_CONT_TIME, C_TIME_FROM, C_TIME_TO, C_APPLY_DAY,
+        C_DAY_FROM, C_DAY_TO, C_TIME_FROM2, C_TIME_TO2, C_TIME_FROM3, C_TIME_TO3, RATE_NAME, MODIFY_DATE, DEL_DATE )
+        values (
+        REPLACE(#{arrayCrew[0]}, '''', ''),
+        REPLACE(#{arrayCrew[1]}, '''', ''),
+        SHA(REPLACE(#{arrayCrew[2]},'''','')),
+        REPLACE(#{arrayCrew[3]},'''',''),
+        REPLACE(#{arrayCrew[4]},'''',''),
+        REPLACE(#{arrayCrew[5]},'''',''),
+        REPLACE(#{arrayCrew[6]},'''',''),
+        REPLACE(#{arrayCrew[7]},'''',''),
+        REPLACE(#{arrayCrew[8]},'''',''),
+        REPLACE(#{arrayCrew[9]},'''',''),
+        REPLACE(#{arrayCrew[10]},'''',''),
+        REPLACE(#{arrayCrew[11]},'''',''),
+        REPLACE(#{arrayCrew[12]},'''',''),
+        REPLACE(#{arrayCrew[13]},'''',''),
+        REPLACE(#{arrayCrew[14]},'''',''),
+        REPLACE(#{arrayCrew[15]},'''',''),
+        REPLACE(#{arrayCrew[16]},'''',''),
+        REPLACE(#{arrayCrew[17]},'''','')
+        , NOW(), NOW())
+
+    </insert>
+
+
+
+    <!-- Excel 수정 -->
+    <update id="updateCrewInfoExcel" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        update TB_CREW_INFO set
+        S_CODE = #{s_code},
+        CREW_ID = #{crew_id},
+        PASSWD=SHA1(#{addPw}),
+        CREW_NAME = #{crew_name},
+        AMT_TOTAL_MONTH=#{amt_total_month},
+        C_LIMIT_DAY_AMT=#{limit_day_amt},
+        C_LIMIT_CONT_AMT=#{limit_cont_amt},
+        C_LIMIT_CONT_TIME=#{limit_cont_time},
+        C_APPLY_DAY=#{apply_day},
+        C_DAY_FROM=#{day_from},
+        C_DAY_TO=#{day_to},
+        RATE_NAME=#{rate_name},
+        MODIFY_DATE=NOW(), GUI_FLAG='Y'
+        WHERE CREW_ID=#{crew_id} AND S_CODE =#{s_code}
+    </update>
+
+    <!--  상세 정보-->
+    <select id="checkExcelSub" parameterType="iwm_ko.crewInfo.model.CrewInfoVo" resultType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        select
+        CREW_ID
+        from
+        TB_CREW_INFO_SUB
+        where
+        S_CODE=#{s_code}
+        and
+        CREW_ID=#{crew_id}
+
+    </select>
+
+
+    <!-- Excel import시 SubData 추가 -->
+    <insert id="insertExcelSubData" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+
+        insert into
+        TB_CREW_INFO_SUB
+        ( S_CODE, CREW_ID, WIFI_CONN, VAL1, VAL2 )
+        values
+        ( #{s_code}, #{crew_id}, #{wifi_conn}, "", #{val2} )
+
+    </insert>
+
+    <update id="updateExcelSubData" parameterType="iwm_ko.crewInfo.model.CrewInfoVo">
+        update TB_CREW_INFO_SUB set
+        WIFI_CONN = #{wifi_conn},
+        VAL2 = #{val2}
+        WHERE CREW_ID = #{crew_id} AND S_CODE = #{s_code}
+    </update>
+
+</mapper>
+

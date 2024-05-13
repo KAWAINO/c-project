@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.rdata">
+
+
+    <select id="selectRdataList" parameterType="iwm_ko.rdata.model.RdataVo" resultType="iwm_ko.rdata.model.RdataVo">
+
+        select B.RATE_NAME AS rate_name , A.COMP_NAME AS comp_name , A.COMP_ID AS comp_id , A.S_NAME AS s_name , A.S_CODE AS s_code
+        , B.AMT_TOTAL_MONTH AS amt_total_month , B.C_LIMIT_DAY_AMT AS limit_day_amt , B.C_LIMIT_CONT_AMT AS limit_cont_amt , B.C_LIMIT_CONT_TIME AS limit_cont_time
+        , B.C_TIME_FROM AS time_from , B.C_TIME_TO AS time_to , B.C_APPLY_DAY AS apply_day
+        , C_DAY_FROM AS day_from , C_DAY_TO AS day_to
+        , B.C_TIME_FROM2 AS time_from2 , B.C_TIME_TO2 AS time_to2 , B.C_TIME_FROM3 AS time_from3 , B.C_TIME_TO3 AS time_to3
+        from (
+        select S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+        from TB_SHIP_INFO S, TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        )A, TB_CREW_RATE B
+        where A.S_CODE=B.S_CODE
+
+        <if test="sessionCompId != 0">
+            and A.COMP_ID = #{sessionCompId}
+        </if>
+        <!-- 검색  -->
+        <if test="searchCompId != null and searchCompId != ''">
+            AND A.COMP_ID = #{searchCompId}
+        </if>
+        <if test="searchSName != null and searchSName != ''">
+            AND A.S_NAME LIKE CONCAT('%',#{searchSName},'%')
+        </if>
+        <if test="searchRateName != null and searchRateName != ''">
+            AND B.RATE_NAME LIKE CONCAT('%',#{searchRateName},'%')
+        </if>
+        order by A.COMP_NAME, A.S_NAME, B.RATE_NAME
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+    </select>
+
+    <!-- 총 갯수 조회 -->
+    <select id="selectRdataCount" parameterType="iwm_ko.rdata.model.RdataVo" resultType="iwm_ko.rdata.model.RdataVo">
+
+        select B.RATE_NAME AS rate_name , A.COMP_NAME AS comp_name , A.COMP_ID AS comp_id , A.S_NAME AS s_name , A.S_CODE AS s_code
+        , B.AMT_TOTAL_MONTH AS amt_total_month , B.C_LIMIT_DAY_AMT AS limit_day_amt , B.C_LIMIT_CONT_AMT AS limit_cont_amt , B.C_LIMIT_CONT_TIME AS limit_cont_time
+        , B.C_TIME_FROM AS time_from , B.C_TIME_TO AS time_to , B.C_APPLY_DAY AS apply_day
+        , C_DAY_FROM AS day_from , C_DAY_TO AS day_to
+        , B.C_TIME_FROM2 AS time_from2 , B.C_TIME_TO2 AS time_to2 , B.C_TIME_FROM3 AS time_from3 , B.C_TIME_TO3 AS time_to3
+        from (
+        select S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+        from TB_SHIP_INFO S, TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        )A, TB_CREW_RATE B
+        where A.S_CODE=B.S_CODE
+
+        <if test="sessionCompId != 0">
+            and A.COMP_ID = #{sessionCompId}
+        </if>
+        <!-- 검색  -->
+        <if test="searchCompId != null and searchCompId != ''">
+            AND A.COMP_ID = #{searchCompId}
+        </if>
+        <if test="searchSName != null and searchSName != ''">
+            AND A.S_NAME LIKE CONCAT('%',#{searchSName},'%')
+        </if>
+        <if test="searchRateName != null and searchRateName != ''">
+            AND B.RATE_NAME LIKE CONCAT('%',#{searchRateName},'%')
+        </if>
+        order by A.COMP_NAME, A.S_NAME, B.RATE_NAME
+
+    </select>
+
+
+    <select id="selectShipCompList" parameterType="iwm_ko.rdata.model.RdataVo" resultType="iwm_ko.rdata.model.RdataVo">
+
+        select COMP_ID AS comp_id
+        , COMP_NAME AS comp_name
+        from TB_SCOMP_INFO where DEL_FLAG='N'
+        <if test="sessionCompId != 0">
+            AND COMP_ID=#{sessionCompId}
+        </if>
+        ORDER BY COMP_NAME
+
+    </select>
+
+
+    <select id="selectShipNameList" parameterType="iwm_ko.rdata.model.RdataVo" resultType="iwm_ko.rdata.model.RdataVo">
+
+        SELECT S_NAME AS ship_name, S_CODE AS s_code
+        FROM TB_SHIP_INFO
+        WHERE COMP_ID = #{compId}
+        AND DEL_FLAG='N'
+        ORDER BY S_NAME
+
+    </select>
+
+    <select id="selectRateNameList" parameterType="iwm_ko.rdata.model.RdataVo" resultType="iwm_ko.rdata.model.RdataVo">
+
+        select
+        RATE_NAME AS rate_name
+        from
+        TB_CREW_RATE
+        where S_CODE= #{s_name}
+        order by RATE_NAME
+    </select>
+
+    <select id="selectCrewIdList" parameterType="iwm_ko.rdata.model.RdataVo" resultType="iwm_ko.rdata.model.RdataVo">
+
+        select
+        CREW_ID AS crew_id
+        from TB_CREW_INFO
+        where
+        DEL_FLAG='N'
+        and S_CODE=#{s_name}
+        order
+        by CREW_ID
+
+    </select>
+
+    <!--중복검사-->
+    <select id="chkRdata" parameterType="iwm_ko.rdata.model.RdataVo" resultType="iwm_ko.rdata.model.RdataVo">
+        select RATE_NAME
+        from
+        TB_CREW_RATE
+        where
+        RATE_NAME= #{addRateName}
+        and
+        S_CODE=  #{addName}
+    </select>
+
+
+
+    <!--  추가 -->
+    <insert id="insertRdata" parameterType="iwm_ko.rdata.model.RdataVo">
+
+
+        insert into TB_CREW_RATE
+        (S_CODE, RATE_NAME, AMT_TOTAL_MONTH, C_LIMIT_DAY_AMT, C_LIMIT_CONT_AMT, C_LIMIT_CONT_TIME, C_TIME_FROM, C_TIME_TO,
+        C_APPLY_DAY, C_DAY_FROM, C_DAY_TO, C_TIME_FROM2, C_TIME_TO2, C_TIME_FROM3, C_TIME_TO3 )
+        values
+        ( #{addName}, #{addRateName}, #{addMonth}, #{addDay}, #{addUse}, #{addMin}, #{addTimeFrom}, #{addTimeTo},
+        #{addApplyDays}, #{addDayFrom}, #{addDayTo}, #{addTimeFrom2}, #{addTimeTo2}, #{addTimeFrom3}, #{addTimeTo3} )
+
+    </insert>
+
+
+    <!--  상세 정보-->
+    <select id="selectRdataInfo" parameterType="java.util.HashMap" resultType="iwm_ko.rdata.model.RdataVo">
+
+        select B.RATE_NAME AS rate_name
+        , A.COMP_NAME AS comp_name
+        , A.COMP_ID AS comp_id
+        , A.S_NAME AS s_name
+        , A.S_CODE AS s_code
+        , B.AMT_TOTAL_MONTH AS amt_total_month
+        , B.C_LIMIT_DAY_AMT AS limit_day_amt
+        , B.C_LIMIT_CONT_AMT AS limit_cont_amt
+        , B.C_LIMIT_CONT_TIME AS limit_cont_time
+        , B.C_TIME_FROM AS time_from
+        , B.C_TIME_TO AS time_to
+        , B.C_APPLY_DAY AS apply_day
+        , C_DAY_FROM AS day_from
+        , C_DAY_TO AS day_to
+        , B.C_TIME_FROM2 AS time_from2
+        , B.C_TIME_TO2 AS time_to2
+        , B.C_TIME_FROM3 AS time_from3
+        , B.C_TIME_TO3 AS time_to3
+        from (
+        select S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+        from TB_SHIP_INFO S, TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        )A, TB_CREW_RATE B
+        where A.S_CODE=B.S_CODE
+        AND A.S_CODE = #{s_code}
+        AND B.RATE_NAME = #{rate_name}
+
+    </select>
+
+
+
+    <!-- 수정 -->
+    <update id="updateRdata" parameterType="iwm_ko.rdata.model.RdataVo">
+         update
+        TB_CREW_RATE
+        set GUI_FLAG='Y',
+        S_CODE = #{updSCode},
+        AMT_TOTAL_MONTH= #{updMonth},
+        C_LIMIT_DAY_AMT = #{updDay},
+        C_LIMIT_CONT_AMT = #{updUse},
+        C_LIMIT_CONT_TIME = #{updMin},
+        C_TIME_FROM= #{updTimeFrom},
+        C_TIME_TO = #{updTimeTo},
+        C_APPLY_DAY = #{updApplyDays},
+        C_DAY_FROM = #{updDayFrom},
+        C_DAY_TO = #{updDayTo},
+        C_TIME_FROM2 = #{updTimeFrom2},
+        C_TIME_TO2 = #{updTimeTo2},
+        C_TIME_FROM3 = #{updTimeFrom3},
+        C_TIME_TO3 = #{updTimeTo3}
+
+        where
+        RATE_NAME=#{u_updRateName}
+        and S_CODE=#{updSCode}
+
+
+    </update>
+
+    <!--  chKDel-->
+    <select id="chkDel" parameterType="iwm_ko.rdata.model.RdataVo" resultType="String">
+        SELECT
+        FNC_CHECK_RATE
+        (
+        #{s_code},
+        #{rate_name}
+        )
+        AS
+        RESULT FROM DUAl
+
+    </select>
+
+
+
+
+    <!--  삭제 -->
+    <delete id="deleteRdata" parameterType="iwm_ko.rdata.model.RdataVo" >
+
+        delete
+        from
+        TB_CREW_RATE
+        where
+        RATE_NAME=#{rate_name}
+        and S_CODE=#{s_code}
+    </delete>
+
+
+</mapper>
+

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.menu">
+
+    <select id="selectMenuList" parameterType="iwm_ko.menu.model.MenuVo" resultType="iwm_ko.menu.model.MenuVo">
+       SELECT CONCAT(CONVERT(CONVERT(CONVERT(B.GUI_CODE, INT)/100, INT), CHAR(10)), '|', B.GUI_GROUP, '|', B.GUI_NAME) AS gui_name
+       	    , CONCAT(CONVERT(CONVERT(CONVERT(B.GUI_CODE, INT)/100, INT), CHAR(10)), '|', B.EN_GUI_GROUP, '|', B.EN_GUI_NAME) AS en_gui_name
+       	    , CONCAT(B.DIR_NAME, '|', B.WEB_NAME) AS web_name
+         FROM TB_GUI_GRADE_CENTER A, TB_GUI_INFO_CENTER B
+        WHERE A.GUI_CODE = B.GUI_CODE
+       AND A.USE_FLAG = 'Y'
+       AND A.GRADE = #{userGrade}
+     ORDER BY B.GUI_CODE;
+    </select>
+
+</mapper>

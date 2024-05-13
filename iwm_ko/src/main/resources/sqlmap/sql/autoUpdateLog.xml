@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.autoUpdateLog">
+
+
+    <select id="selectAutoUpdateLogList" parameterType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo" resultType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo">
+        select A.P_NAME AS p_name, A.V1 AS v1, A.V2 AS v2, A.LAST_RESULT AS last_result, A.UPDATE_DATE AS update_date,
+        B.S_CODE AS s_code, B.COMP_NAME AS comp_name, B.S_NAME AS s_name, B.COMP_ID AS comp_id from
+        (SELECT
+        AR.P_NAME, AI.VERSION V1, AR.VERSION V2, AR.LAST_RESULT, AR.UPDATE_DATE, AR.S_CODE
+        FROM
+        TB_AUTOUPDATE_INFO AI
+        LEFT JOIN TB_AUTOUPDATE_RESULT AR ON AI.P_NAME = AR.P_NAME) A,
+        (SELECT
+        SI.COMP_NAME, SI.COMP_ID, SH.S_NAME, SH.S_CODE
+        FROM TB_SCOMP_INFO SI, TB_SHIP_INFO SH
+        WHERE SI.COMP_ID = SH.COMP_ID
+        AND SH.DEL_FLAG='N'
+        AND SI.DEL_FLAG='N') B
+        WHERE A.S_CODE = B.S_CODE
+
+        <if test="searchCompId != null and searchCompId != 'select' and searchCompId != ''">
+            AND B.COMP_ID = #{searchCompId}
+        </if>
+        <if test="searchSCode != null and searchSCode != 'select' and searchSCode != ''">
+            AND B.S_CODE = #{searchSCode}
+        </if>
+        <if test="cs_upd != null and cs_upd == 1">
+            AND V1 &lt;&gt; V2
+        </if>
+        ORDER BY A.S_CODE, P_NAME, V2
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+    </select>
+
+
+
+    <select id="selectCount" parameterType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo" resultType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo">
+
+   select A.P_NAME AS p_name, A.V1 AS v1, A.V2 AS v2, A.LAST_RESULT AS last_result, A.UPDATE_DATE AS update_date,
+        B.S_CODE AS s_code, B.COMP_NAME AS comp_name, B.S_NAME AS s_name, B.COMP_ID AS comp_id from
+        (SELECT
+        AR.P_NAME, AI.VERSION V1, AR.VERSION V2, AR.LAST_RESULT, AR.UPDATE_DATE, AR.S_CODE
+        FROM
+        TB_AUTOUPDATE_INFO AI
+        LEFT JOIN TB_AUTOUPDATE_RESULT AR ON AI.P_NAME = AR.P_NAME) A,
+        (SELECT
+        SI.COMP_NAME, SI.COMP_ID, SH.S_NAME, SH.S_CODE
+        FROM TB_SCOMP_INFO SI, TB_SHIP_INFO SH
+        WHERE SI.COMP_ID = SH.COMP_ID
+        AND SH.DEL_FLAG='N'
+        AND SI.DEL_FLAG='N') B
+        WHERE A.S_CODE = B.S_CODE
+
+        <if test="searchCompId != null and searchCompId != 'select' and searchCompId != ''">
+            AND B.COMP_ID = #{searchCompId}
+        </if>
+        <if test="searchSCode != null and searchSCode != 'select' and searchSCode != ''">
+            AND B.S_CODE = #{searchSCode}
+        </if>
+        <if test="cs_upd != null and cs_upd == 1">
+            AND V1 &lt;&gt; V2
+        </if>
+        ORDER BY A.S_CODE, P_NAME, V2
+
+    </select>
+
+
+    <select id="selectShipNameList" parameterType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo" resultType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo">
+
+        SELECT S_CODE , S_NAME from TB_SHIP_INFO where DEL_FLAG = 'N'
+        <if test="searchCompId != null and searchCompId != 'select' and searchCompId != ''">
+            AND COMP_ID=#{comp_id}
+        </if>
+        ORDER BY S_NAME
+
+    </select>
+
+    <select id="selectCompList" parameterType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo" resultType="iwm_ko.autoUpdateLog.model.AutoUpdateLogVo">
+
+        select COMP_ID AS comp_id , COMP_NAME AS comp_name
+        from TB_SCOMP_INFO where DEL_FLAG='N'
+        <if test="comp_id != 0">
+            AND COMP_ID = #{comp_id}
+        </if>
+        ORDER BY COMP_NAME
+
+    </select>
+
+
+</mapper>
+

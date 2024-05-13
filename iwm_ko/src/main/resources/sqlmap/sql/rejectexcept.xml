@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.rejectExcept">
+
+	<!-- 페이지로딩 리스트 조회 -->
+    <select id="selectRejectExceptList" parameterType="iwm_ko.rejectExcept.model.RejectExceptVo" resultType="iwm_ko.rejectExcept.model.RejectExceptVo">
+    	SELECT B.MAC, A.COMP_NAME, A.S_NAME, A.S_CODE, B.DESCR
+		  FROM (
+				   SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+				   FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+				   WHERE S.COMP_ID = C.COMP_ID
+				 )A, TB_REJECT_EXCEPT_INFO B
+		 WHERE A.S_CODE = B.S_CODE
+		   
+		 <if test="searchCompId != null and searchCompId != ''">
+		   AND COMP_ID = #{ searchCompId }
+		 </if>  
+		 <if test="scomp != 0 and scomp != null">
+		   AND COMP_ID = #{ scomp }
+		 </if>  
+		 <if test="searchShipName != null and searchShipName != ''">
+		  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+		</if> 
+		
+		ORDER BY A.COMP_NAME, A.S_NAME, B.MAC
+		   
+		 <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+	     LIMIT #{startrow}, #{fetchrow}
+	   	 </if>
+    </select>
+    
+    <!-- 페이징 -->
+    <select id="totalRejectExceptList" parameterType="iwm_ko.rejectExcept.model.RejectExceptVo" resultType="int">
+    	
+  	    SELECT COUNT(*)
+  		  FROM (
+		    	SELECT B.MAC, A.COMP_NAME, A.S_NAME, A.S_CODE, B.DESCR
+				  FROM (
+						   SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+						   FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+						   WHERE S.COMP_ID = C.COMP_ID
+						 )A, TB_REJECT_EXCEPT_INFO B
+				 WHERE A.S_CODE = B.S_CODE
+		   
+				 <if test="searchCompId != null and searchCompId != ''">
+				   AND COMP_ID = #{ searchCompId }
+				 </if>  
+		 		 <if test="scomp != 0 and scomp != null">
+				   AND COMP_ID = #{ scomp }
+				 </if>  
+				 <if test="searchShipName != null and searchShipName != ''">
+				  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+				</if> 
+				
+				ORDER BY A.COMP_NAME, A.S_NAME, B.MAC
+			   )AS COUNT 
+    </select>
+    
+    <!-- mac 중복검사 -->
+    <select id="chkMac" parameterType="iwm_ko.rejectExcept.model.RejectExceptVo" resultType="iwm_ko.rejectExcept.model.RejectExceptVo">
+    	SELECT MAC
+    	  FROM TB_REJECT_EXCEPT_INFO
+    	 WHERE MAC = UPPER(#{ addMac })
+    	   AND S_CODE = #{ addShipName }
+    </select>
+    
+    <!-- 등록 -->
+	<insert id="insertAuth" parameterType="iwm_ko.rejectExcept.model.RejectExceptVo">
+		INSERT INTO TB_REJECT_EXCEPT_INFO
+		(
+			MAC
+		  , S_CODE
+		  , DESCR
+		  , MODIFY_DATE
+		  , GUI_FLAG
+		)
+		VALUES
+		(
+			UPPER(#{ addMac })
+		  , #{ addShipName }
+		  , #{ addDescr }
+		  , NOW()
+		  , 'Y'
+		)
+	</insert>
+	
+	<!-- 수정모달 -->
+    <select id="selectRejectExceptInfo" parameterType="java.util.HashMap" resultType="iwm_ko.rejectExcept.model.RejectExceptVo">
+    	SELECT B.MAC, A.COMP_NAME, A.S_NAME, A.S_CODE, B.DESCR
+		  FROM (
+				   SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+				   FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+				   WHERE S.COMP_ID = C.COMP_ID
+				 )A, TB_REJECT_EXCEPT_INFO B
+		 WHERE A.S_CODE = B.S_CODE
+		   AND B.MAC = UPPER( #{ mac } )
+		   AND B.S_CODE = #{ s_code }
+    </select>
+    
+    <!-- 수정 -->
+	<update id="updateAuth" parameterType="iwm_ko.rejectExcept.model.RejectExceptVo">
+		UPDATE TB_REJECT_EXCEPT_INFO
+		<set>
+			   S_CODE = #{ updScode }
+			 , DESCR = #{ updDescr }
+			 , MODIFY_DATE = NOW()
+			 , GUI_FLAG = 'Y'
+		</set>
+		 WHERE MAC = UPPER(#{ u_updMac })
+		   AND S_CODE = #{ updScode }
+	</update>
+	
+	<!-- 삭제 -->
+	<delete id="deleteAuth" parameterType="iwm_ko.rejectExcept.model.RejectExceptVo">
+		DELETE FROM TB_REJECT_EXCEPT_INFO
+		 WHERE MAC = UPPER(#{ mac })
+		   AND S_CODE = #{ s_code }
+	</delete>
+
+</mapper>

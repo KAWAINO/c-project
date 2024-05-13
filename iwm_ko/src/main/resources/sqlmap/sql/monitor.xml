@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.monitor">
+
+    <!-- <select id="selectMenuList" parameterType="iwm_ko.monitor.model.MonitorVo" resultType="iwm_ko.monitor.model.MonitorVo">
+        SELECT CONCAT(CONVERT(CONVERT(CONVERT(B.GUI_CODE, INT)/100, INT), CHAR(10)), '|', B.GUI_GROUP, '|', B.GUI_NAME) AS gui_name,
+	           CONCAT(CONVERT(CONVERT(CONVERT(B.GUI_CODE, INT)/100, INT), CHAR(10)), '|', B.EN_GUI_GROUP, '|', B.EN_GUI_NAME) AS en_gui_name,
+	           CONCAT(B.DIR_NAME, '|', B.WEB_NAME) AS web_name
+          FROM TB_GUI_GRADE_CENTER A, TB_GUI_INFO_CENTER B
+         WHERE A.GUI_CODE = B.GUI_CODE
+	       AND A.USE_FLAG = 'Y'
+	       AND A.GRADE = #{userGrade}
+	     ORDER BY B.GUI_CODE;
+    </select> -->
+
+    <!-- 선박명 조회 -->
+    <select id="getShipList" parameterType="iwm_ko.monitor.model.MonitorVo" resultType="iwm_ko.monitor.model.MonitorVo">
+    	SELECT S_CODE
+    		 , S_NAME
+    	  FROM TB_SHIP_INFO
+    	 WHERE DEL_FLAG = 'N'
+    	 <if test="searchCompId != null and searchCompId != '' and searchCompId != '전체'">
+		   AND COMP_ID = #{ searchCompId }
+		 </if>
+		 <if test="scomp != 0 and scomp != null">
+		   AND COMP_ID = #{ scomp }
+		 </if>
+    	 ORDER BY S_NAME
+    </select>
+    
+    <!--  -->
+    <select id="getTable" parameterType="iwm_ko.monitor.model.MonitorVo" resultType="String">
+    	<if test="searchUnit == 'hour'">
+    		SELECT FNC_GET_TABLE('TB_STAT_SHIP_H', #{ startDate }, #{ endDate } ) GET FROM DUAL
+    	</if>
+    	<if test="searchUnit == 'day'">
+    		SELECT FNC_GET_TABLE('TB_STAT_SHIP_D', #{ startDate }, #{ endDate } ) GET FROM DUAL
+    	</if>
+    	<if test="searchUnit == 'month'">
+    		SELECT FNC_GET_TABLE('TB_STAT_SHIP_M', #{ startDate }, #{ endDate } ) GET FROM DUAL
+    	</if>
+    </select>
+    
+    <!-- getTimeList -->
+    <select id="getTimeList" parameterType="iwm_ko.monitor.model.MonitorVo" resultType="iwm_ko.monitor.model.MonitorVo">
+    	SELECT DD.MON_TIME
+		     , IFNULL(CC.VAL2, 0) VAL2 
+		  FROM (
+		  		SELECT
+		    	   <if test="searchUnit == 'hour'">
+		    		   CONCAT(DATE_FORMAT(DATE_ADD(#{ endDate }, INTERVAL -TIME_IDX HOUR), '%Y%m%d%H'), '0000') MON_TIME,
+		    	   </if>
+		    	   <if test="searchUnit == 'day'">
+		    		   CONCAT(DATE_FORMAT(DATE_ADD(#{ endDate }, INTERVAL -TIME_IDX DAY), '%Y%m%d%H'), '0000') MON_TIME,
+		    	   </if>
+		    	   <if test="searchUnit == 'month'">
+		    		   CONCAT(DATE_FORMAT(DATE_ADD(#{ endDate }, INTERVAL -TIME_IDX MONTH), '%Y%m%d%H'), '0000') MON_TIME,
+		    	   </if>
+					   0 VAL2
+				  FROM TB_DUMMY_TIME
+				 WHERE TIME_IDX BETWEEN 0 AND #{ diffTime }
+		 	   ) DD 
+  		  LEFT JOIN (
+  				 	 SELECT DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y%m%d%H%i%s') MON_TIME,
+						    CONVERT(VAL2, INT) AS VAL2, COMP_ID
+               		   FROM (
+							 SELECT A.MON_TIME, A.VAL2, B.COMP_ID
+							   FROM ${ tableName } A, TB_SHIP_INFO B
+							  WHERE A.KEY1 = B.S_CODE
+							    AND B.S_CODE = ''
+							    AND A.MON_TIME BETWEEN DATE_FORMAT(#{ startDate }, '%Y%m%d%H%i%s') AND DATE_FORMAT(#{ endDate }, '%Y%m%d%H%i%s')
+							  GROUP BY A.MON_TIME
+						   ) U
+                    ) CC ON DD.MON_TIME = CC.MON_TIME
+		<if test="searchCompId != null and searchCompId != '' and searchCompId != '전체'">
+		  AND COMP_ID = #{searchCompId}
+		</if>	
+		 <if test="scomp != 0 and scomp != null">
+		   AND COMP_ID = #{ scomp }
+		 </if>
+		  
+		 ORDER BY MON_TIME ASC
+    </select>
+    
+    <!-- getDataList -->
+    <select id="getDataList" parameterType="iwm_ko.monitor.model.MonitorVo" resultType="iwm_ko.monitor.model.MonitorVo">
+    	SELECT P.S_CODE
+    		 , P.S_NAME
+    		 , CONVERT((CASE WHEN B.VAL2 IS NULL THEN 0 ELSE SUM(B.VAL2) END), INT) VAL2
+		  FROM TB_SHIP_INFO P 
+		  LEFT JOIN (
+		  			 SELECT KEY1, VAL2, MON_TIME
+		               FROM ${ tableName } A
+		              WHERE MON_TIME BETWEEN #{ startDate } AND #{ endDate }) B
+		         ON P.S_CODE = B.KEY1
+		 WHERE P.DEL_FLAG = 'N'
+		 <if test="searchShipCode != null and searchShipCode != ''">
+		   AND P.S_CODE IN (#{ searchShipCode })
+		 </if>
+		 <if test="searchShipCode == null or searchShipCode == ''">
+		   AND P.S_CODE = ''
+		 </if>
+    	 <if test="searchCompId != null and searchCompId != '' and searchCompId != '전체'">
+		   AND COMP_ID = #{ searchCompId }
+		 </if>
+		 <if test="scomp != 0 and scomp != null">
+		   AND COMP_ID = #{ scomp }
+		 </if>
+		 GROUP BY P.S_CODE
+		 ORDER BY CONVERT((CASE WHEN B.VAL2 IS NULL THEN 0 ELSE SUM(B.VAL2) END), INT) ${ searchOrder }, P.S_NAME
+		 
+		 <if test="searchCompCnt != ''">
+		 	LIMIT ${ searchCompCnt }
+		 </if>
+		 
+    </select>
+    
+    <!-- getTimeList -->
+    <select id="getDataTimeList" parameterType="iwm_ko.monitor.model.MonitorVo" resultType="iwm_ko.monitor.model.MonitorVo">
+    	SELECT DD.MON_TIME
+		     , IFNULL(CC.VAL2, 0) VAL2 
+		  FROM (
+		  		SELECT
+		    	   <if test="searchUnit == 'hour'">
+		    		   CONCAT(DATE_FORMAT(DATE_ADD(#{ endDate }, INTERVAL -TIME_IDX HOUR), '%Y%m%d%H'), '0000') MON_TIME,
+		    	   </if>
+		    	   <if test="searchUnit == 'day'">
+		    		   CONCAT(DATE_FORMAT(DATE_ADD(#{ endDate }, INTERVAL -TIME_IDX DAY), '%Y%m%d%H'), '0000') MON_TIME,
+		    	   </if>
+		    	   <if test="searchUnit == 'month'">
+		    		   CONCAT(DATE_FORMAT(DATE_ADD(#{ endDate }, INTERVAL -TIME_IDX MONTH), '%Y%m%d%H'), '0000') MON_TIME,
+		    	   </if>
+					   0 VAL2
+				  FROM TB_DUMMY_TIME
+				 WHERE TIME_IDX BETWEEN 0 AND #{ diffTime }
+		 	   ) DD 
+  		  LEFT JOIN (
+  				 	 SELECT DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y%m%d%H%i%s') MON_TIME,
+						    CONVERT(VAL2, INT) AS VAL2, COMP_ID
+               		   FROM (
+							 SELECT A.MON_TIME, A.VAL2, B.COMP_ID
+							   FROM ${ tableName } A, TB_SHIP_INFO B
+							  WHERE A.KEY1 = B.S_CODE
+							    AND B.S_CODE = #{ searchShipCode }
+							    AND A.MON_TIME BETWEEN DATE_FORMAT(#{ startDate }, '%Y%m%d%H%i%s') AND DATE_FORMAT(#{ endDate }, '%Y%m%d%H%i%s')
+							  GROUP BY A.MON_TIME
+						   ) U
+                    ) CC ON DD.MON_TIME = CC.MON_TIME
+    	 <if test="searchCompId != null and searchCompId != '' and searchCompId != '전체'">
+		   AND COMP_ID = #{ searchCompId }
+		 </if>
+		 <if test="scomp != 0 and scomp != null">
+		   AND COMP_ID = #{ scomp }
+		 </if>
+		  
+		 ORDER BY MON_TIME ASC
+    </select>
+    
+    <!--  -->
+	<select id="getShipName" parameterType="iwm_ko.monitor.model.MonitorVo" resultType="String">
+		SELECT S_NAME
+		  FROM TB_SHIP_INFO
+		 WHERE S_CODE = #{ searchShipCode }
+    	 <if test="searchCompId != null and searchCompId != '' and searchCompId != '전체'">
+		   AND COMP_ID = #{ searchCompId }
+		 </if>
+		 <if test="scomp != 0 and scomp != null">
+		   AND COMP_ID = #{ scomp }
+		 </if>
+	</select>
+
+</mapper>
+

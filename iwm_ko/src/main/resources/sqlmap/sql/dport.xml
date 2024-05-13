@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.dport">
+
+
+
+    <select id="selectDportList" parameterType="iwm_ko.dport.model.DportVo" resultType="iwm_ko.dport.model.DportVo">
+        select PORT_FROM, PORT_TO from TB_DEFAULT_PORT order by PORT_FROM
+    </select>
+
+
+    <select id="chkDport" parameterType="iwm_ko.dport.model.DportVo" resultType="iwm_ko.dport.model.DportVo">
+        select PORT_FROM from TB_DEFAULT_PORT
+        where
+        PORT_FROM= #{add_from} or PORT_TO=#{add_to}
+    </select>
+
+
+    <!--  추가 -->
+    <insert id="insertDport" parameterType="iwm_ko.dport.model.DportVo">
+
+        insert into TB_DEFAULT_PORT
+        ( PORT_FROM, PORT_TO, MODIFY_DATE )
+        values
+        ( #{add_from}, #{add_to}, NOW() )
+    </insert>
+
+
+    <!-- 삭제 -->
+    <update id="deleteDport" parameterType="iwm_ko.dport.model.DportVo">
+        delete from TB_DEFAULT_PORT where PORT_FROM=#{port_from}
+    </update>
+</mapper>
+

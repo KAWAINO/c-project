@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.autoUpdate">
+
+
+    <select id="selectAutoUpdateList" parameterType="iwm_ko.autoUpdate.model.AutoUpdateVo" resultType="iwm_ko.autoUpdate.model.AutoUpdateVo">
+        select SEQ AS seq, P_NAME AS p_name , VERSION AS version, FILE_LOC AS file_loc, LOCAL_LOC AS local_loc, DOWN_LOC AS down_loc, SVR_PROC_FLAG AS svr_proc_flag,
+            DOWNLOAD_FLAG AS download_flag, DOWN_FILE_SVR AS down_file_svr, DOWN_FILE_CLI AS down_file_cli, DOWN_FILE_NAME AS down_file_name, CMD_FLAG AS cmd_flag,
+            CMD_STR AS cmd_str, SCRIPT_FLAG AS script_flag, SCRIPT_FILE AS script_file
+            from TB_AUTOUPDATE_INFO
+            order by P_NAME
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+    </select>
+
+    <select id="selectAutoUpdateCount" parameterType="iwm_ko.autoUpdate.model.AutoUpdateVo" resultType="iwm_ko.autoUpdate.model.AutoUpdateVo">
+        select SEQ AS seq, P_NAME AS p_name , VERSION AS version, FILE_LOC AS file_loc, LOCAL_LOC AS local_loc, DOWN_LOC AS down_loc, SVR_PROC_FLAG AS svr_proc_flag,
+        DOWNLOAD_FLAG AS download_flag, DOWN_FILE_SVR AS down_file_svr, DOWN_FILE_CLI AS down_file_cli, DOWN_FILE_NAME AS down_file_name, CMD_FLAG AS cmd_flag,
+        CMD_STR AS cmd_str, SCRIPT_FLAG AS script_flag, SCRIPT_FILE AS script_file
+        from TB_AUTOUPDATE_INFO
+        order by P_NAME
+    </select>
+
+    <select id="chkAutoUpdate" parameterType="iwm_ko.autoUpdate.model.AutoUpdateVo" resultType="iwm_ko.autoUpdate.model.AutoUpdateVo">
+
+        select P_NAME
+        from
+        TB_AUTOUPDATE_INFO where P_NAME=#{add_name}
+
+    </select>
+
+    <select id="selectSeq" resultType="String">
+
+        SELECT SEQ_NEXTVAL('SEQ_AUTO_UPDATE') NUM FROM DUAL
+
+    </select>
+
+    <!--  추가 -->
+    <insert id="insertAutoUpdate" parameterType="iwm_ko.autoUpdate.model.AutoUpdateVo">
+        insert into TB_AUTOUPDATE_INFO
+        (
+        SEQ, P_NAME, VERSION, FILE_LOC , LOCAL_LOC, DOWN_LOC, SVR_PROC_FLAG, DOWNLOAD_FLAG, DOWN_FILE_SVR, DOWN_FILE_CLI, DOWN_FILE_NAME,
+        CMD_FLAG, CMD_STR, SCRIPT_FLAG, SCRIPT_FILE, MODIFY_DATE
+        )
+        values (
+       #{seq}, #{add_name}, #{add_version}, #{add_svr_loc}, #{add_local_loc}, #{add_down_loc}, #{add_proc_flag}, #{add_down_flag},
+       #{add_down_svr}, #{add_down_local}, #{add_down_name}, #{add_cmd_flag}, #{add_cmd_str}, #{add_script_flag}, #{add_script_loc},
+       NOW()
+       )
+
+    </insert>
+
+    <!--  상세 정보-->
+    <select id="selectAutoUpdateInfo" parameterType="java.util.HashMap" resultType="iwm_ko.autoUpdate.model.AutoUpdateVo">
+
+        select
+        P_NAME AS p_name, VERSION AS version, FILE_LOC AS file_loc, LOCAL_LOC AS local_loc, DOWN_LOC AS down_loc, SVR_PROC_FLAG AS svr_proc_flag, DOWNLOAD_FLAG AS download_flag,
+        DOWN_FILE_SVR AS down_file_svr, DOWN_FILE_CLI AS down_file_cli, DOWN_FILE_NAME AS down_file_name, CMD_FLAG AS cmd_flag, CMD_STR AS cmd_str,
+        SCRIPT_FLAG AS script_flag, SCRIPT_FILE AS script_file
+        from
+        TB_AUTOUPDATE_INFO
+         where SEQ=#{seq}
+
+    </select>
+
+    <!-- 수정 -->
+    <update id="updateAutoUpdate" parameterType="iwm_ko.autoUpdate.model.AutoUpdateVo">
+        update
+        TB_AUTOUPDATE_INFO
+        set
+        P_NAME=#{upd_name}, VERSION=#{upd_version}, FILE_LOC=#{upd_file_loc}, LOCAL_LOC=#{upd_local_loc}, DOWN_LOC=#{upd_down_loc}, SVR_PROC_FLAG=#{upd_svr_proc_flag},
+        DOWNLOAD_FLAG=#{upd_download_flag}, DOWN_FILE_SVR=#{upd_down_file_svr}, DOWN_FILE_CLI=#{upd_down_file_cli}, DOWN_FILE_NAME=#{upd_down_file_name}, CMD_FLAG=#{upd_cmd_flag},
+        CMD_STR=#{upd_cmd_str}, SCRIPT_FLAG=#{upd_script_flag}, SCRIPT_FILE=#{upd_script_file}, MODIFY_DATE=NOW(), GUI_FLAG='Y'
+        where
+        P_NAME = #{upd_name}
+    </update>
+
+    <!-- 삭제 -->
+    <update id="deleteAutoUpdate" parameterType="iwm_ko.autoUpdate.model.AutoUpdateVo">
+        delete from
+        TB_AUTOUPDATE_INFO
+        where
+        P_NAME=#{p_name}
+    </update>
+</mapper>
+

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context docBase="mysql_test"
+    path="/mysql_test"
+    reloadable="true">
+<Resource name="jdbc/apmsdb"
+   auth="Container"
+   type="javax.sql.DataSource"
+   driverClassName="com.mysql.jdbc.Driver"
+   url="jdbc:mysql://211.253.137.197:13306/apmsdb?useOldAliasMetadataBehavior=true&amp;autoReconnect=true"
+   username="apms"
+   password="_apms1004"
+   maxActive="70"
+   maxIdle="70"
+   maxWait="-1"
+   validationQuery="SELECT 1"
+   validationInterval="1800"
+    />
+</Context>

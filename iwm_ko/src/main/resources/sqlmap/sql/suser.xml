@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.suser">
+
+	<!-- 등급 조회 -->
+    <select id="selectGradeList" parameterType="iwm_ko.suser.model.SuserVo" resultType="iwm_ko.suser.model.SuserVo">
+    	SELECT GRADE
+    		 , GNAME
+    	  FROM TB_GRADE_INFO_SHIP
+    </select>
+
+	<!-- 유저 리스트 조회 -->
+    <select id="selectSuserList" parameterType="iwm_ko.suser.model.SuserVo" resultType="iwm_ko.suser.model.SuserVo">
+		SELECT A.USER_ID, A.USER_NAME, B.GNAME, A.TEAM_NAME, A.PHONE
+		     , A.MOBILE, A.EMAIL, A.DEL_FLAG, A.S_CODE, A.S_NAME
+		     , A.COMP_ID, A.COMP_NAME
+	      FROM (
+		        SELECT U.USER_ID, U.USER_NAME, U.USER_GRADE, U.TEAM_NAME, U.PHONE
+			  	     , U.MOBILE, U.EMAIL, S.S_CODE, S.S_NAME, U.DEL_FLAG
+				     , S.COMP_ID, S.COMP_NAME
+			      FROM (
+					    SELECT SI.COMP_ID, CI.COMP_NAME, SI.S_NAME, SI.S_CODE
+					      FROM TB_SHIP_INFO SI, TB_SCOMP_INFO CI
+						 WHERE SI.COMP_ID=CI.COMP_ID
+				       )S, TB_USER_INFO_SHIP U
+			     WHERE U.S_CODE = S.S_CODE
+	           )A, TB_GRADE_INFO_SHIP B
+	     WHERE A.USER_GRADE = B.GRADE
+	       AND A.DEL_FLAG = 'N'
+
+		  <if test="searchCompId != null and searchCompId != ''">
+		  	AND A.COMP_ID = #{ searchCompId }
+		  </if>
+		  <if test="scomp != 0 and scomp != null">
+		  	AND A.COMP_ID = #{ scomp }
+		  </if>
+		  <if test="searchUserName != null and searchUserName != ''">
+		  	AND A.USER_NAME LIKE CONCAT('%', #{ searchUserName }, '%')
+		  </if>
+		  <if test="searchUserId != null and searchUserId != ''">
+		  	AND A.USER_ID LIKE CONCAT('%', #{ searchUserId }, '%')
+		  </if>
+		  <if test="searchGrade != null and searchGrade != ''">
+		  	AND A.USER_GRADE = #{ searchGrade }
+		  </if>
+		  <if test="searchSname != null and searchSname != ''">
+		  	AND A.S_NAME LIKE CONCAT('%', #{ searchSname }, '%')
+		  </if>
+		  
+		  ORDER BY USER_ID
+		  
+	  	  <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+          	LIMIT #{startrow}, #{fetchrow}
+    	  </if>
+	</select>
+	
+	<!-- 페이징 -->
+    <select id="totalSuserList" parameterType="iwm_ko.suser.model.SuserVo" resultType="int">
+    	SELECT COUNT(*)
+  		  FROM (
+                SELECT A.USER_ID, A.USER_NAME, B.GNAME, A.TEAM_NAME, A.PHONE
+                	 , A.MOBILE, A.EMAIL, A.DEL_FLAG, A.S_CODE, A.S_NAME
+                	 , A.COMP_ID, A.COMP_NAME
+				  FROM (
+				        SELECT U.USER_ID, U.USER_NAME, U.USER_GRADE, U.TEAM_NAME, U.PHONE
+				             , U.MOBILE, U.EMAIL, S.S_CODE, S.S_NAME, U.DEL_FLAG
+				             , S.COMP_ID, S.COMP_NAME
+				          FROM (
+				                SELECT SI.COMP_ID, CI.COMP_NAME, SI.S_NAME, SI.S_CODE
+								  FROM TB_SHIP_INFO SI, TB_SCOMP_INFO CI
+								 WHERE SI.COMP_ID=CI.COMP_ID
+				               )S, TB_USER_INFO_SHIP U
+				         WHERE U.S_CODE = S.S_CODE
+				        )A, TB_GRADE_INFO_SHIP B
+				 WHERE A.USER_GRADE = B.GRADE
+				   AND A.DEL_FLAG = 'N'   
+				   
+		  <if test="searchCompId != null and searchCompId != ''">
+		  	AND A.COMP_ID = #{ searchCompId }
+		  </if>
+		  <if test="scomp != 0 and scomp != null">
+		  	AND A.COMP_ID = #{ scomp }
+		  </if>
+		  <if test="searchUserName != null and searchUserName != ''">
+		  	AND A.USER_NAME LIKE CONCAT('%', #{ searchUserName }, '%')
+		  </if>
+		  <if test="searchUserId != null and searchUserId != ''">
+		  	AND A.USER_ID LIKE CONCAT('%', #{ searchUserId }, '%')
+		  </if>
+		  <if test="searchGrade != null and searchGrade != ''">
+		  	AND A.USER_GRADE = #{ searchGrade }
+		  </if>
+		  <if test="searchSname != null and searchSname != ''">
+		  	AND A.S_NAME LIKE CONCAT('%', #{ searchSname }, '%')
+		  </if>
+			    ) COUNT
+		 ORDER BY USER_ID
+    </select>
+    
+    <!-- 중복 검사 -->
+    <select id="chkInsertSuser" parameterType="iwm_ko.suser.model.SuserVo" resultType="iwm_ko.suser.model.SuserVo">
+    	SELECT USER_ID
+    	  FROM TB_USER_INFO_SHIP
+    	 WHERE USER_ID = #{ addUserId }
+    	   AND S_CODE = #{ addShipName }
+    	   AND DEL_FLAG = 'N'
+    </select>
+    
+    <!-- del_flag 체크 -->
+    <select id="chkDelFlag" parameterType="iwm_ko.suser.model.SuserVo" resultType="iwm_ko.suser.model.SuserVo">
+    	SELECT DEL_FLAG
+    	  FROM TB_USER_INFO_SHIP
+    	 WHERE USER_ID = #{ addUserId }
+    	   AND S_CODE = #{ addShipName }
+    </select>
+	
+	<!-- del_flag가 Y이면 기존 유저 수정 -->
+	<update id="changeUser" parameterType="iwm_ko.suser.model.SuserVo">
+		UPDATE TB_USER_INFO_SHIP
+		<set>
+			   PASSWD = #{ addPassWd }
+			 , USER_NAME = #{ addUserName }
+		     , USER_GRADE = #{ addUserGrade }
+		     , TEAM_NAME = ''
+		     , PHONE = ''
+		     , MOBILE = ''
+		     , EMAIL = ''
+		     , S_CODE = #{ addShipName }
+		     , DEL_FLAG = 'N'
+		     , MODIFY_DATE = NOW()
+		     , GUI_FLAG = 'Y'
+		</set>
+		 WHERE USER_ID = #{ addUserId }
+		   AND S_CODE = #{ addShipName }
+	</update>
+	
+	<!-- 운영자 추가 -->
+	<insert id="insertSuser" parameterType="iwm_ko.suser.model.SuserVo">
+		INSERT INTO TB_USER_INFO_SHIP 
+		(
+			USER_ID, PASSWD, USER_NAME, USER_GRADE, TEAM_NAME, 
+			PHONE, MOBILE, EMAIL, S_CODE, MODIFY_DATE, DEL_DATE
+		)
+		VALUES 
+		(
+			#{ addUserId }, 
+			#{ addPassWd }, 
+			#{ addUserName }, 
+			#{ addUserGrade }, 
+			'', 
+			'', 
+			'', 
+			'', 
+			#{ addShipName }, 
+			NOW(), 
+			NOW()
+		)
+	</insert>
+	
+	<!-- 수정 modal 이동 -->
+    <select id="selectSuserInfo" parameterType="java.util.HashMap" resultType="iwm_ko.suser.model.SuserVo">
+    	SELECT A.USER_ID, A.USER_NAME, A.USER_GRADE, B.GNAME, A.TEAM_NAME
+		     , A.PHONE, A.MOBILE, A.EMAIL, A.DEL_FLAG, A.S_CODE
+		     , A.S_NAME, A.COMP_ID, A.COMP_NAME
+	      FROM (
+				 SELECT U.USER_ID, U.USER_NAME, U.USER_GRADE, U.TEAM_NAME, U.PHONE
+					  , U.MOBILE, U.EMAIL ,S.S_CODE, S.S_NAME, U.DEL_FLAG
+					  , S.COMP_ID, S.COMP_NAME
+				  FROM (
+					   	 SELECT SI.COMP_ID, CI.COMP_NAME, SI.S_NAME, SI.S_CODE
+					   	   FROM TB_SHIP_INFO SI, TB_SCOMP_INFO CI
+					   	  WHERE SI.COMP_ID=CI.COMP_ID
+					    )S, TB_USER_INFO_SHIP U
+				 WHERE U.S_CODE = S.S_CODE
+			   )A, TB_GRADE_INFO_SHIP B
+	   WHERE A.USER_GRADE = B.GRADE
+		 AND A.USER_ID = #{ user_id }
+		 AND A.S_CODE = #{ s_code }
+		 AND A.DEL_FLAG = 'N'
+    </select>
+    
+    <!-- OWM 운영자 수정 -->
+	<update id="updateSuser" parameterType="iwm_ko.suser.model.SuserVo">
+		UPDATE TB_USER_INFO_SHIP
+		<set>
+			<if test="cngPwd != null">PASSWD = #{ updPassWd },</if>
+			   USER_NAME = #{ updUserName }
+		     , USER_GRADE = #{ updUserGrade }
+		     , S_CODE = #{ updScode }
+		     , MODIFY_DATE = NOW()
+		     , GUI_FLAG = 'Y'
+		</set>
+		 WHERE USER_ID = #{ updUserId }
+		   AND S_CODE = #{ s_code }
+	</update>
+	
+	<!-- OWM 운영자 삭제 -->
+	<update id="deleteSuser" parameterType="iwm_ko.suser.model.SuserVo">
+		UPDATE TB_USER_INFO_SHIP
+		<set>
+			   DEL_FLAG = 'Y'
+			 , DEL_DATE = NOW()
+			 , GUI_FLAG = 'Y'
+		</set>
+		WHERE USER_ID = #{ user_id }
+		  AND S_CODE = #{ s_code }
+	</update>
+	
+</mapper>

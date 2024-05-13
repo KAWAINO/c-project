@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.login">
+
+
+    <!-- ID, PASSWORD 가 맞는 회원이 있는지 조회 -->
+    <select id="selectAuthorizedUser" parameterType="iwm_ko.login.model.LoginVo" resultType="iwm_ko.login.model.LoginVo">
+        SELECT  USER_ID AS user_id , PASSWD , USER_NAME AS user_name , COMP_ID AS comp_id , USER_GRADE AS user_grade , TB.GNAME AS gname
+        FROM TB_USER_INFO_CENTER TA , TB_GRADE_INFO TB
+        WHERE
+        TA.USER_GRADE = TB.GRADE
+        and USER_ID= #{user_id}
+        AND ( PASSWD=SHA1(#{passwd}) or PASSWD=(#{passwd256}))
+        AND DEL_FLAG='N'
+
+    </select>
+
+
+    <select id="getUserPassLimit" resultType="iwm_ko.login.model.LoginVo"> 
+        SELECT COUNT(*) AS COUNT
+        	 , IFNULL(LIMIT_DAYS, 90) AS LIMIT_DAYS 
+        FROM TB_USER_PASS_LIMIT 
+        LIMIT 1 
+    </select> 
+
+
+    <select id="getUserPassChangeDate" parameterType="java.lang.String" resultType="String"> 
+        SELECT PWD_CHANGE_DATE 
+        FROM TB_USER_INFO_CENTER 
+        WHERE USER_ID = #{user_id} 
+    </select> 
+
+
+    <select id="checkId" parameterType="iwm_ko.login.model.LoginVo" resultType="iwm_ko.login.model.LoginVo">
+        SELECT USER_ID AS user_id
+        FROM TB_USER_INFO_CENTER_LOCK
+        WHERE USER_ID=#{user_id}
+    </select>
+
+    <select id="getLockCount" resultType="java.lang.Integer">
+        SELECT VAL AS val
+        FROM TB_CONF_VAL
+        WHERE CONF_NAME = 'USER_LOGIN_LOCK_COUNT'
+    </select>
+
+
+    <update id="updateFailCount" parameterType="java.lang.String">
+
+        UPDATE
+        TB_USER_INFO_CENTER_LOCK
+        SET
+        FAIL_CNT=FAIL_CNT+1,
+        MODIFY_DATE=NOW(),
+        GUI_FLAG='Y'
+        WHERE
+        USER_ID=#{user_id}
+
+    </update>
+
+    <select id="getFailCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT FAIL_CNT
+        FROM TB_USER_INFO_CENTER_LOCK
+        WHERE USER_ID=#{user_id}
+    </select>
+
+
+    <insert id="insertFailCount"  parameterType="java.lang.String">
+    INSERT INTO
+        TB_USER_INFO_CENTER_LOCK
+        ( USER_ID, FAIL_CNT, MODIFY_DATE, GUI_FLAG )
+        VALUES
+        (#{user_id} , 1, NOW(), 'Y' )
+    </insert>
+    
+    <select id="checkMenu" parameterType="java.lang.String" resultType="java.lang.Boolean">
+        SELECT USE_FLAG 
+          FROM TB_GUI_INFO_CENTER A, TB_GUI_GRADE_CENTER B
+	     WHERE A.GUI_CODE = B.GUI_CODE
+		   AND B.GRADE = #{grade}
+		   AND A.DIR_NAME= #{groupCode}
+    </select>
+
+</mapper>
+

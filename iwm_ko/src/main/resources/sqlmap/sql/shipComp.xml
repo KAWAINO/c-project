@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.shipComp">
+
+
+    <select id="selectShipCompList" parameterType="iwm_ko.shipComp.model.ShipCompVo" resultType="iwm_ko.shipComp.model.ShipCompVo">
+
+            select COMP_ID AS comp_id
+            , COMP_NAME AS comp_name
+            , SHIP_HOLD AS ship_hold
+            , (select count(*) from TB_SHIP_INFO S
+            where C.COMP_ID = S.COMP_ID
+            and S.DEL_FLAG='N') AS s_cnt
+            , (select count(A.MAC) from TB_AP_INFO A, TB_SHIP_INFO SS
+            where C.COMP_ID = SS.COMP_ID
+            and SS.S_CODE = A.S_CODE
+            and A.DEL_FLAG='N') AS a_cnt
+            , DESCR
+            from TB_SCOMP_INFO C
+            where DEL_FLAG='N'
+            <!-- 검색  -->
+            <if test="searchShipComp != null and searchShipComp != ''">
+                AND COMP_NAME LIKE CONCAT('%',#{searchShipComp},'%')
+            </if>
+            <if test="sessionCompId != 0">
+                and COMP_ID = #{sessionCompId}
+            </if>
+            order by COMP_NAME
+
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+
+
+    </select>
+
+
+    <!-- 총 갯수 조회 -->
+    <select id="selectShipCompCount" parameterType="iwm_ko.shipComp.model.ShipCompVo" resultType="iwm_ko.shipComp.model.ShipCompVo">
+
+        select COMP_ID AS comp_id
+        , COMP_NAME AS comp_name
+        , SHIP_HOLD AS ship_hold
+        , (select count(*) from TB_SHIP_INFO S
+        where C.COMP_ID = S.COMP_ID
+        and S.DEL_FLAG='N') AS s_cnt
+        , (select count(A.MAC) from TB_AP_INFO A, TB_SHIP_INFO SS
+        where C.COMP_ID = SS.COMP_ID
+        and SS.S_CODE = A.S_CODE
+        and A.DEL_FLAG='N') AS a_cnt
+        , DESCR
+        from TB_SCOMP_INFO C
+        where DEL_FLAG='N'
+        <!-- 검색  -->
+        <if test="searchShipComp != null and searchShipComp != ''">
+            AND COMP_NAME LIKE CONCAT('%',#{searchShipComp},'%')
+        </if>
+        <if test="sessionCompId != 0">
+            and COMP_ID = #{sessionCompId}
+        </if>
+        order by COMP_NAME
+
+    </select>
+
+    <!--중복검사-->
+    <select id="chkShipComp" parameterType="iwm_ko.shipComp.model.ShipCompVo" resultType="iwm_ko.shipComp.model.ShipCompVo">
+
+        select COMP_NAME
+        from TB_SCOMP_INFO
+        where
+        COMP_NAME= #{addCompName} and COMP_ID != #{addCompId} and DEL_FLAG='N'
+
+
+    </select>
+
+    <select id="selectCompIdSeq" resultType="int">
+
+        SELECT SEQ_NEXTVAL('SEQ_SCOMP_INFO') NUM FROM DUAL
+    </select>
+
+    <select id="chkFlag" parameterType="iwm_ko.shipComp.model.ShipCompVo" resultType="java.lang.String">
+
+        select DEL_FLAG from TB_SCOMP_INFO where COMP_NAME=#{addCompName}
+
+    </select>
+
+
+    <!--  추가 -->
+    <insert id="insertShipComp" parameterType="iwm_ko.shipComp.model.ShipCompVo">
+
+        insert into TB_SCOMP_INFO
+        ( COMP_ID, COMP_NAME, SHIP_HOLD, DESCR, MODIFY_DATE, DEL_DATE)
+        values ( #{addCompId} , #{addCompName}, #{addCompCnt}, #{addDescr}, NOW(), NOW())
+
+    </insert>
+    <!--  상세 정보-->
+    <select id="selectCompInfo" parameterType="java.util.HashMap" resultType="iwm_ko.shipComp.model.ShipCompVo">
+
+        select COMP_ID AS comp_id , COMP_NAME AS comp_name , SHIP_HOLD AS ship_hold , DESCR
+        from TB_SCOMP_INFO
+        where DEL_FLAG='N'
+        AND
+        COMP_ID = #{comp_id}
+
+        <if test="sessionCompId != 0">
+            and COMP_ID = #{comp_id}
+        </if>
+
+    </select>
+
+
+    <!-- 수정 -->
+    <update id="updateShipComp" parameterType="iwm_ko.shipComp.model.ShipCompVo">
+
+        update
+        TB_SCOMP_INFO
+        set
+        COMP_NAME=#{updCompName},
+        SHIP_HOLD=#{updCompHold},
+        DESCR=#{updDescr},
+        MODIFY_DATE=NOW(),
+        GUI_FLAG='Y'
+        where
+        COMP_ID=#{updCompId}
+
+    </update>
+
+
+    <!--  삭제 -->
+    <delete id="deleteShipComp" parameterType="iwm_ko.shipComp.model.ShipCompVo">
+
+        update
+        TB_SCOMP_INFO
+        set DEL_FLAG='Y',
+        DEL_DATE=NOW(),
+        GUI_FLAG='Y'
+        where COMP_NAME = #{comp_name}
+    </delete>
+
+    <!-- 수정 -->
+    <update id="updateInsertShipComp" parameterType="iwm_ko.shipComp.model.ShipCompVo">
+
+        update TB_SCOMP_INFO
+        set
+        SHIP_HOLD=#{addCompCnt},
+        DESCR=#{addDescr},
+        DEL_FLAG='N',
+        MODIFY_DATE=NOW(),
+        GUI_FLAG='Y'
+        where
+        COMP_NAME=#{addCompName}
+
+
+    </update>
+
+    <select id="chkDel" parameterType="iwm_ko.shipComp.model.ShipCompVo" resultType="java.lang.String">
+        SELECT FNC_CHECK_COMPID (#{comp_id}) AS RESULT FROM DUAL
+    </select>
+</mapper>
+

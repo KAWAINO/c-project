@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.crewauth">
+
+    <!-- 페이지로딩리스트 -->
+    <select id="selectCrewAuthList" parameterType="iwm_ko.crewauth.model.CrewAuthVo" resultType="iwm_ko.crewauth.model.CrewAuthVo">
+    	SELECT B.MAC, B.AP_NAME, A.CREW_ID, A.CREW_NAME, A.COMP_NAME
+    		 , A.S_NAME, A.S_CODE, B.STATUS, B.DISCONN_FLAG, B.AUTH_FLAG
+		     , (CASE WHEN B.CONN_TIME IS NULL THEN '-' ELSE DATE_FORMAT(B.CONN_TIME, '%Y-%m-%d %H:%i:%s') END) CONN_TIME
+			 , (CASE WHEN B.DISCONN_TIME IS NULL THEN '-' ELSE DATE_FORMAT(B.DISCONN_TIME, '%Y-%m-%d %H:%i:%s') END) DISCONN_TIME
+		  FROM (
+				SELECT CI.CREW_ID, CI.CREW_NAME, SI.COMP_ID, SI.COMP_NAME, SI.S_CODE, SI.S_NAME
+				  FROM (
+				   		SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+				   		  FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+				   	     WHERE S.COMP_ID = C.COMP_ID
+				   	    )SI,TB_CREW_INFO CI
+				  WHERE SI.S_CODE = CI.S_CODE
+			   )A, (
+				   	SELECT CA.MAC, CA.S_CODE, AI.AP_NAME, CA.CREW_ID, CA.STATUS, CA.DISCONN_FLAG, CA.AUTH_FLAG, CA.CONN_TIME, CA.DISCONN_TIME
+				   	  FROM TB_CREW_AUTH_INFO CA 
+				   	  LEFT JOIN TB_AP_INFO AI ON CA.AP_MAC = AI.MAC
+				   	   AND CA.S_CODE = AI.S_CODE
+				   ) B
+		WHERE A.CREW_ID = B.CREW_ID
+	      AND A.S_CODE = B.S_CODE
+		  <!-- AND B.CONN_TIME BETWEEN STR_TO_DATE(#{conStrDate}, '%Y%m%d%H%i%s') 
+		  AND STR_TO_DATE(#{conEndDate}, '%Y%m%d%H%i%s')
+		  AND B.DISCONN_TIME BETWEEN STR_TO_DATE(#{disconStrDate}, '%Y%m%d%H%i%s') 
+		  AND STR_TO_DATE(#{disconEndDate}, '%Y%m%d%H%i%s') -->
+	      <if test="conn == 'on'">
+	  	  AND B.CONN_TIME BETWEEN STR_TO_DATE(#{conStrDate}, '%Y%m%d%H%i%s') 
+		  AND STR_TO_DATE(#{conEndDate}, '%Y%m%d%H%i%s')
+	  	  </if>
+	  	  <if test="disconn == 'on'">
+	  	  AND B.DISCONN_TIME BETWEEN STR_TO_DATE(#{disconStrDate}, '%Y%m%d%H%i%s') 
+		  AND STR_TO_DATE(#{disconEndDate}, '%Y%m%d%H%i%s')
+	  	  </if> 
+	  	  <if test="searchCompId != null and searchCompId != ''">
+	  	  AND A.COMP_ID = #{ searchCompId }
+	      </if>
+	      <if test="scomp != 0 and scomp != null">
+	  	  AND A.COMP_ID = #{ scomp }
+	      </if>
+	      <if test="searchShipName != null and searchShipName != ''">
+	  	  AND A.S_CODE = #{ searchShipName }
+	      </if>
+	      <if test="searchCrewId != null and searchCrewId != ''">
+	  	  AND (A.CREW_ID LIKE CONCAT('%', #{ searchCrewId }, '%') OR A.CREW_NAME LIKE CONCAT('%', #{searchCrewId}, '%'))
+	      </if>
+	      <if test="searchStatus != null and searchStatus != ''">
+	  	  AND B.STATUS = #{ searchStatus }
+	      </if>
+	      <if test="searchDisconFlag != null and searchDisconFlag != ''">
+	  	  AND B.DISCONN_FLAG = #{ searchDisconFlag }
+	      </if>
+
+	    ORDER BY B.CONN_TIME DESC
+	      
+	    
+      <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+        LIMIT #{startrow}, #{fetchrow}
+   	  </if> 
+    </select>
+    
+     <!-- 페이징 -->
+    <select id="totalCrewAuthList" parameterType="iwm_ko.crewauth.model.CrewAuthVo" resultType="int">
+	    SELECT COUNT(*)
+	      FROM (
+		    	SELECT B.MAC, B.AP_NAME, A.CREW_ID, A.CREW_NAME, A.COMP_NAME
+		    		 , A.S_NAME, A.S_CODE, B.STATUS, B.DISCONN_FLAG, B.AUTH_FLAG
+				     , (CASE WHEN B.CONN_TIME IS NULL THEN '-' ELSE DATE_FORMAT(B.CONN_TIME, '%Y-%m-%d %H:%i:%s') END) CONN_TIME
+					 , (CASE WHEN B.DISCONN_TIME IS NULL THEN '-' ELSE DATE_FORMAT(B.DISCONN_TIME, '%Y-%m-%d %H:%i:%s') END) DISCONN_TIME
+				  FROM (
+						SELECT CI.CREW_ID, CI.CREW_NAME, SI.COMP_ID, SI.COMP_NAME, SI.S_CODE, SI.S_NAME
+						  FROM (
+						   		SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+						   		  FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+						   	     WHERE S.COMP_ID = C.COMP_ID
+						   	    )SI,TB_CREW_INFO CI
+						  WHERE SI.S_CODE = CI.S_CODE
+					   )A, (
+						   	SELECT CA.MAC, CA.S_CODE, AI.AP_NAME, CA.CREW_ID, CA.STATUS, CA.DISCONN_FLAG, CA.AUTH_FLAG, CA.CONN_TIME, CA.DISCONN_TIME
+						   	  FROM TB_CREW_AUTH_INFO CA 
+						   	  LEFT JOIN TB_AP_INFO AI ON CA.AP_MAC = AI.MAC
+						   	   AND CA.S_CODE = AI.S_CODE
+						   ) B
+				WHERE A.CREW_ID = B.CREW_ID
+			      AND A.S_CODE = B.S_CODE
+				  <!-- AND B.CONN_TIME BETWEEN STR_TO_DATE(#{conStrDate}, '%Y%m%d%H%i%s') 
+				  AND STR_TO_DATE(#{conEndDate}, '%Y%m%d%H%i%s')
+				  AND B.DISCONN_TIME BETWEEN STR_TO_DATE(#{disconStrDate}, '%Y%m%d%H%i%s') 
+				  AND STR_TO_DATE(#{disconEndDate}, '%Y%m%d%H%i%s') -->
+			      <if test="conn == 'on'">
+			  	  AND B.CONN_TIME BETWEEN STR_TO_DATE(#{conStrDate}, '%Y%m%d%H%i%s') 
+				  AND STR_TO_DATE(#{conEndDate}, '%Y%m%d%H%i%s')
+			  	  </if>
+			  	  <if test="disconn == 'on'">
+			  	  AND B.DISCONN_TIME BETWEEN STR_TO_DATE(#{disconStrDate}, '%Y%m%d%H%i%s') 
+				  AND STR_TO_DATE(#{disconEndDate}, '%Y%m%d%H%i%s')
+			  	  </if>
+			  	  <if test="searchCompId != null and searchCompId != ''">
+			  	  AND A.COMP_ID = #{ searchCompId }
+			      </if>
+			      <if test="searchShipName != null and searchShipName != ''">
+			  	  AND A.S_CODE = #{ searchShipName }
+			      </if>
+			      <if test="searchCrewId != null and searchCrewId != ''">
+			  	  AND (A.CREW_ID LIKE CONCAT('%', #{ searchCrewId }, '%') OR A.CREW_NAME LIKE CONCAT('%', #{searchCrewId}, '%'))
+			      </if>
+			      <if test="searchCrewName != null and searchCrewName != ''">
+			  	   AND A.CREW_NAME LIKE CONCAT('%', #{ searchCrewName }, '%')
+			      </if>
+			      <if test="searchStatus != null and searchStatus != ''">
+			  	  AND B.STATUS = #{ searchStatus }
+			      </if>
+			      <if test="searchDisconFlag != null and searchDisconFlag != ''">
+			  	  AND B.DISCONN_FLAG = #{ searchDisconFlag }
+			      </if>
+			) AS COUNT
+	    ORDER BY CONN_TIME DESC
+    </select>
+
+</mapper>

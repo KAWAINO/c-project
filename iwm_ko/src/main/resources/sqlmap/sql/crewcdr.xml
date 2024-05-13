@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.crewcdr">
+
+
+    <select id="selectCrewcdrList" parameterType="iwm_ko.crewcdr.model.CrewcdrVo" resultType="iwm_ko.crewcdr.model.CrewcdrVo">
+
+        <![CDATA[
+                SELECT A.MAC AS mac,A.AP_NAME AS ap_name,A.CREW_ID AS crew_id,C.CREW_NAME AS crew_name,
+                B.COMP_NAME AS comp_name,B.S_NAME AS s_name,
+                DATE_FORMAT(A.START_TIME, '%Y-%m-%d %H:%i:%s') AS start_time,
+                DATE_FORMAT(A.END_TIME, '%Y-%m-%d %H:%i:%s') AS end_time,
+                (CASE
+                    WHEN A.USE_TIME < 60 THEN TIME_FORMAT(SEC_TO_TIME(A.USE_TIME), '%s sec')
+                    WHEN A.USE_TIME < 3600 THEN TIME_FORMAT(SEC_TO_TIME(A.USE_TIME), '%i min %s sec')
+                    ELSE TIME_FORMAT(SEC_TO_TIME(A.USE_TIME), '%H hour %i min %s sec')
+                END) AS use_time,A.AMT_USE AS amt_use,A.AMT_ACC_DAY AS amt_acc_day,A.AMT_ACC_MON AS amt_acc_mon,A.AMT_BAL AS amt_bal
+                FROM ${searchTableName} A ,
+                (SELECT S.S_CODE, S.S_NAME, CI.COMP_NAME, CI.COMP_ID FROM TB_SHIP_INFO S, TB_SCOMP_INFO CI where  S.COMP_ID=CI.COMP_ID ) B, TB_CREW_INFO C
+               where A.S_CODE=B.S_CODE and A.CREW_ID=C.CREW_ID  and A.S_CODE=C.S_CODE and #{finalSearchStartDate} <= DATE_FORMAT(A.END_TIME, '%Y%m%d%H%i%s')
+                AND DATE_FORMAT(A.END_TIME, '%Y%m%d%H%i%s') <= #{finalSearchEndDate}
+            ]]>
+        <if test="chkStartDate == 'true'">
+            <![CDATA[  and (#{finalChkSearchStartDate} <= DATE_FORMAT(A.START_TIME, '%Y%m%d%H%i%s')
+            and DATE_FORMAT(A.START_TIME, '%Y%m%d%H%i%s') <= #{finalChkSearchEndDate})   ]]>
+        </if>
+        <if test="comp_id != 0">
+            and B.COMP_ID = #{comp_id}
+        </if>
+        <if test="searchCompId != null and searchCompId != ''">
+            and B.COMP_ID = #{searchCompId}
+        </if>
+        <if test="searchSCode != null and searchSCode != 'select'">
+            and B.S_CODE = #{searchSCode}
+        </if>
+        <if test="searchCrewId != null and searchCrewId != 'select'">
+            and A.CREW_ID = #{searchCrewId}
+        </if>
+        order by A.END_TIME desc
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+
+    </select>
+
+
+    <!-- 총 갯수 조회 -->
+    <select id="selectCrewcdrCount" parameterType="iwm_ko.crewcdr.model.CrewcdrVo" resultType="iwm_ko.crewcdr.model.CrewcdrVo">
+
+        <![CDATA[
+                SELECT A.MAC AS mac,A.AP_NAME AS ap_name,A.CREW_ID AS crew_id,C.CREW_NAME AS crew_name,
+                B.COMP_NAME AS comp_name,B.S_NAME AS s_name,
+                DATE_FORMAT(A.START_TIME, '%Y-%m-%d %H:%i:%s') AS start_time,
+                DATE_FORMAT(A.END_TIME, '%Y-%m-%d %H:%i:%s') AS end_time,
+                (CASE
+                    WHEN A.USE_TIME < 60 THEN TIME_FORMAT(SEC_TO_TIME(A.USE_TIME), '%s sec')
+                    WHEN A.USE_TIME < 3600 THEN TIME_FORMAT(SEC_TO_TIME(A.USE_TIME), '%i min %s sec')
+                    ELSE TIME_FORMAT(SEC_TO_TIME(A.USE_TIME), '%H hour %i min %s sec')
+                END) AS use_time,A.AMT_USE AS amt_use,A.AMT_ACC_DAY AS amt_acc_day,A.AMT_ACC_MON AS amt_acc_mon,A.AMT_BAL AS amt_bal
+                FROM ${searchTableName} A ,
+                (SELECT S.S_CODE, S.S_NAME, CI.COMP_NAME, CI.COMP_ID FROM TB_SHIP_INFO S, TB_SCOMP_INFO CI where  S.COMP_ID=CI.COMP_ID ) B, TB_CREW_INFO C
+               where A.S_CODE=B.S_CODE and A.CREW_ID=C.CREW_ID  and A.S_CODE=C.S_CODE and #{finalSearchStartDate} <= DATE_FORMAT(A.END_TIME, '%Y%m%d%H%i%s')
+                AND DATE_FORMAT(A.END_TIME, '%Y%m%d%H%i%s') <= #{finalSearchEndDate}
+            ]]>
+        <if test="chkStartDate == 'true'">
+            <![CDATA[  and (#{finalChkSearchStartDate} <= DATE_FORMAT(A.START_TIME, '%Y%m%d%H%i%s')
+            and DATE_FORMAT(A.START_TIME, '%Y%m%d%H%i%s') <= #{finalChkSearchEndDate})   ]]>
+        </if>
+        <if test="comp_id != 0">
+            and B.COMP_ID = #{comp_id}
+        </if>
+        <if test="searchCompId != null and searchCompId != ''">
+            and B.COMP_ID = #{searchCompId}
+        </if>
+        <if test="searchSCode != null and searchSCode != 'select'">
+            and B.S_CODE = #{searchSCode}
+        </if>
+        <if test="searchCrewId != null and searchCrewId != 'select'">
+            and A.CREW_ID = #{searchCrewId}
+        </if>
+        order by A.END_TIME desc
+
+
+    </select>
+
+
+    <select id="selectTableName" parameterType="iwm_ko.crewcdr.model.CrewcdrVo" resultType="String">
+
+        select FNC_GET_TABLE('TB_CREW_CDR', #{finalSearchStartDate}, #{finalSearchEndDate}) GET from dual
+
+    </select>
+
+
+    <select id="selectShipCompList" parameterType="iwm_ko.crewcdr.model.CrewcdrVo" resultType="iwm_ko.crewcdr.model.CrewcdrVo">
+        select COMP_ID AS comp_id , COMP_NAME AS comp_name
+        from TB_SCOMP_INFO
+        <if test="comp_id != 0">
+            where COMP_ID = #{comp_id}
+        </if>
+        ORDER BY COMP_NAME
+    </select>
+
+
+    <select id="selectShipNameList" parameterType="iwm_ko.crewcdr.model.CrewcdrVo" resultType="iwm_ko.crewcdr.model.CrewcdrVo">
+
+        SELECT
+        S_NAME AS ship_name, S_CODE AS s_code
+        FROM TB_SHIP_INFO
+        <if test="comp_id != 'select'">
+            WHERE COMP_ID = #{comp_id}
+        </if>
+        ORDER BY S_NAME
+
+    </select>
+
+
+    <select id="selectCrewIdList" parameterType="iwm_ko.crewcdr.model.CrewcdrVo" resultType="iwm_ko.crewcdr.model.CrewcdrVo">
+
+        select CREW_ID AS crew_id, CREW_NAME AS crew_name
+        from
+        TB_CREW_INFO
+        <if test="s_code != 'select'">
+            where S_CODE=#{s_code}
+        </if>
+        order by CREW_ID
+
+    </select>
+
+
+
+</mapper>
+

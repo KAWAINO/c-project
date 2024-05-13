@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.swUpdate">
+
+    <select id="selectCompList" parameterType="iwm_ko.swUpdate.model.SwUpdateVo" resultType="iwm_ko.swUpdate.model.SwUpdateVo">
+
+        select COMP_ID AS comp_id
+        , COMP_NAME AS comp_name
+        from TB_SCOMP_INFO
+        where DEL_FLAG='N'
+        <if test="comp_id != 0">
+            AND COMP_ID = #{comp_id}
+        </if>
+        ORDER BY COMP_NAME
+
+    </select>
+
+
+
+    <!-- 전체 리스트 -->
+    <select id="selectSwUpdateList" parameterType="iwm_ko.swUpdate.model.SwUpdateVo" resultType="iwm_ko.swUpdate.model.SwUpdateVo">
+
+        select
+        S.COMP_NAME AS comp_name, S.S_CODE AS s_code, S.S_NAME AS s_name,
+        T.SEQ_SW_SCH AS seq_sw_sch, SCH_NAME AS sch_name, SCH_UNIT AS sch_unit,
+        SCH_INTERVAL AS sch_interval, SCH_HOUR AS sch_hour, SCH_MIN AS sch_min
+        from
+        TB_SW_SCH T,
+        (
+        select TS.SEQ_SW_SCH, TS.S_CODE, SC.S_NAME, SC.COMP_ID, SC.COMP_NAME
+        from
+        TB_SW_SCH_SHIP TS,
+        (
+        select SI.S_CODE, SI.S_NAME, CI.COMP_ID, CI.COMP_NAME
+        from
+        TB_SHIP_INFO SI, TB_SCOMP_INFO CI
+        where
+        SI.COMP_ID=CI.COMP_ID
+        )
+        SC
+        where TS.S_CODE=SC.S_CODE ) S
+        where T.SEQ_SW_SCH=S.SEQ_SW_SCH
+        <if test="comp_id != 0">
+            and
+            T.SEQ_SW_SCH = ( select SEQ_SW_SCH from TB_SW_SCH_SHIP A,
+            TB_SHIP_INFO B, TB_SCOMP_INFO C
+            where A.S_CODE = B.S_CODE
+            and B.COMP_ID = C.COMP_ID
+            and C.COMP_ID = #{comp_id}
+            order by SEQ_SW_SCH desc limit 1 )
+        </if>
+    </select>
+
+
+    <!-- 등록시 선주사 리스트 -->
+    <select id="selectShipNameList" parameterType="iwm_ko.swUpdate.model.SwUpdateVo" resultType="iwm_ko.swUpdate.model.SwUpdateVo">
+
+        select
+        S.S_CODE AS s_code, S.S_NAME AS ship_name, C.COMP_NAME AS comp_name
+        from
+        TB_SHIP_INFO S, TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        and S.DEL_FLAG='N'
+        and S.COMP_ID=#{comp_id}
+        and S.S_CODE NOT IN (select S_CODE from TB_TRAF_SCH_SHIP)
+        order by S_NAME
+
+    </select>
+
+    <select id="chkSch" parameterType="iwm_ko.swUpdate.model.SwUpdateVo" resultType="iwm_ko.swUpdate.model.SwUpdateVo">
+
+        select SCH_NAME
+        from
+        TB_SW_SCH
+        where SCH_NAME=#{add_sch}
+
+    </select>
+
+
+    <select id="selectSeq" resultType="int">
+        select SEQ_NEXTVAL('SEQ_SW_SCH') as SEQ from dual
+    </select>
+
+
+
+
+    <insert id="insertSwUpdate" parameterType="iwm_ko.swUpdate.model.SwUpdateVo">
+        insert into TB_SW_SCH
+        (
+        SEQ_SW_SCH, SCH_NAME, SCH_UNIT, SCH_INTERVAL, SCH_HOUR, SCH_MIN, MODIFY_DATE )
+        values
+        (
+        #{add_seq}, #{add_sch}, #{add_unit}, #{add_interval},
+        <if test="add_hour == null ">
+            0,
+        </if>
+        <if test="add_hour != null">
+            #{add_hour},
+        </if>
+        #{add_min}, NOW())
+    </insert>
+
+
+
+    <insert id="insertSwUpdateSub" parameterType="iwm_ko.swUpdate.model.SwUpdateVo">
+        insert into TB_SW_SCH_SHIP
+        ( SEQ_SW_SCH, S_CODE )
+        values
+        ( #{add_seq}, #{addSCode} )
+    </insert>
+
+
+
+
+    <!--  상세 정보-->
+    <select id="selectSwUpdateInfo" parameterType="java.util.HashMap" resultType="iwm_ko.swUpdate.model.SwUpdateVo">
+        select
+        S.COMP_NAME AS comp_name, S.S_CODE AS s_code, S.S_NAME AS ship_name,
+        T.SEQ_SW_SCH AS seq_sw_sch, T.SCH_NAME AS sch_name, T.SCH_UNIT AS sch_unit, T.SCH_INTERVAL AS sch_interval, T.SCH_HOUR AS sch_hour, T.SCH_MIN AS sch_min
+        from TB_SW_SCH T,
+        (
+        select TS.SEQ_SW_SCH, SS.COMP_NAME, TS.S_CODE, SS.S_NAME
+        from
+        TB_SW_SCH_SHIP TS,
+        (
+        select
+        CI.COMP_ID, CI.COMP_NAME, SI.S_CODE, SI.S_NAME
+        from
+        TB_SHIP_INFO SI, TB_SCOMP_INFO CI
+        where
+        SI.COMP_ID=CI.COMP_ID
+        )
+        SS
+        where
+        TS.S_CODE=SS.S_CODE
+        )
+        S
+        where
+        T.SEQ_SW_SCH=S.SEQ_SW_SCH
+        and
+        T.SEQ_SW_SCH=#{seq_sw_sch}
+
+    </select>
+
+
+    <!-- 수정 -->
+    <update id="updateSwUpdate" parameterType="iwm_ko.swUpdate.model.SwUpdateVo">
+
+        update
+        TB_SW_SCH
+        set
+        SCH_NAME=#{upd_sch},
+        SCH_UNIT=#{upd_unit},
+        SCH_INTERVAL=#{upd_interval},
+        SCH_HOUR=
+        <if test="upd_hour == null ">
+            0,
+        </if>
+        <if test="upd_hour != null">
+            #{upd_hour},
+        </if>
+        SCH_MIN=#{upd_min},
+        MODIFY_DATE=NOW(),
+        GUI_FLAG='Y'
+        where
+        SEQ_SW_SCH=#{seq_sw_sch}
+
+    </update>
+
+
+    <!--  삭제 -->
+    <delete id="deleteSwUpdate" parameterType="iwm_ko.swUpdate.model.SwUpdateVo">
+        delete
+        from
+        TB_SW_SCH_SHIP
+        where
+        SEQ_SW_SCH=#{seq_sw_sch}
+
+    </delete>
+    <!-- 삭제Sub -->
+    <delete id="deleteSwUpdateSub" parameterType="iwm_ko.swUpdate.model.SwUpdateVo">
+
+        delete
+        from
+        TB_SW_SCH
+        where
+        SEQ_SW_SCH=#{seq_sw_sch}
+
+    </delete>
+
+
+</mapper>
+

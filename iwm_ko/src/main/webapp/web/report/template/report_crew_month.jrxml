@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.14.0.final using JasperReports Library version 6.14.0-2ab0d8625be255bf609c78e1181801213e51db8f  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report_crew_month" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="8d9cd785-e16b-4364-abe9-8e6e0396d5fb">
+
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="MySQL(APMS)"/>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="0.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="0.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="0.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="0.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="Table 1_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table 1_CH" mode="Opaque" backcolor="#DEDEDE">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table 1_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="crew_count" uuid="53cc16f5-522c-4700-8059-2b3fd8a783c2">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="MySQL(APMS)"/>
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<parameter name="SHIPCODE" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[select count(*) 
+from TB_CREW_INFO 
+where S_CODE= $P{SHIPCODE} 
+and DEL_FLAG='N']]>
+		</queryString>
+		<field name="count(*)" class="java.lang.Long">
+			<property name="com.jaspersoft.studio.field.label" value="count(*)"/>
+		</field>
+	</subDataset>
+	<subDataset name="total_data" uuid="12662e47-f31a-46de-a623-37fd760bd866">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="MySQL(APMS)"/>
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<parameter name="TABLE" class="java.lang.String"/>
+		<parameter name="STIME" class="java.lang.String"/>
+		<parameter name="ETIME" class="java.lang.String"/>
+		<parameter name="SHIPCODE" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[select (CASE WHEN VAL2 IS NULL THEN 0 ELSE SUM(VAL2) END) as TOTAL from(
+ select C.CREW_ID, C.CREW_NAME,
+ CONVERT((CASE WHEN B.VAL2 IS NULL THEN 0 ELSE SUM(B.VAL2) END), INT) VAL2
+ from TB_CREW_INFO C left join
+ (select KEY1, KEY2, VAL2, MON_TIME
+ from $P!{TABLE} A
+ where MON_TIME between $P{STIME} and $P{ETIME} )B
+ on C.S_CODE=B.KEY1
+ and C.CREW_ID=B.KEY2
+ where C.DEL_FLAG='N'
+ and B.KEY1= $P{SHIPCODE} 
+ group by C.CREW_ID
+ order by CONVERT((CASE WHEN B.VAL2 IS NULL THEN 0 ELSE SUM(B.VAL2) END), INT) desc, C.CREW_ID)CNT]]>
+		</queryString>
+		<field name="TOTAL" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.label" value="TOTAL"/>
+		</field>
+	</subDataset>
+	<subDataset name="crew_usage" uuid="1acf9012-0056-4474-971f-2940fde71c9c">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="MySQL(APMS)"/>
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<parameter name="STIME" class="java.lang.String"/>
+		<parameter name="ETIME" class="java.lang.String"/>
+		<parameter name="PRE_STIME" class="java.lang.String"/>
+		<parameter name="PRE_ETIME" class="java.lang.String"/>
+		<parameter name="TABLE" class="java.lang.String"/>
+		<parameter name="PRE_TABLE" class="java.lang.String"/>
+		<parameter name="SHIPCODE" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[select N.CREW_ID, N.CREW_NAME, N.AMT_TOTAL_MONTH, VAL2, N_VAL2,
+ (CASE WHEN (VAL2-N_VAL2) >0 THEN CONCAT('▲ ',VAL2-N_VAL2)
+ WHEN (VAL2-N_VAL2)<0 THEN CONCAT('▼ ', ABS(VAL2-N_VAL2))
+ ELSE '0' END) PVAL,
+ (CASE WHEN (VAL2-N_VAL2) >0 THEN CONCAT('▲ ',CEIL((VAL2/ CASE WHEN N_VAL2=0 THEN 1 ELSE N_VAL2 END)*100))
+ WHEN (VAL2-N_VAL2)<0 THEN CONCAT('▼ ', CEIL((VAL2/CASE WHEN N_VAL2=0 THEN 1 ELSE N_VAL2 END)*100))
+ ELSE '0' END) FVAL
+ from
+ (select C.CREW_ID, C.CREW_NAME, C.AMT_TOTAL_MONTH,
+ CONVERT((CASE WHEN B.VAL2 IS NULL THEN 0 ELSE SUM(B.VAL2) END), INT) VAL2
+ from TB_CREW_INFO C left join
+ (select KEY1, KEY2, VAL2, MON_TIME
+ from  $P!{TABLE} A
+ where MON_TIME between $P{STIME} and $P{ETIME} )B
+ on C.S_CODE=B.KEY1 and C.CREW_ID=B.KEY2
+ where C.DEL_FLAG='N'
+ and C.S_CODE= $P{SHIPCODE} 
+ group by C.CREW_ID) N,
+ (select NC.CREW_ID, NC.CREW_NAME, NC.AMT_TOTAL_MONTH,
+ CONVERT((CASE WHEN NB.VAL2 IS NULL THEN 0 ELSE SUM(NB.VAL2) END), INT) N_VAL2
+ from TB_CREW_INFO NC left join
+ (select KEY1, KEY2, VAL2, MON_TIME
+ from  $P!{PRE_TABLE} NA
+ where MON_TIME between $P{PRE_STIME} and $P{PRE_ETIME} )NB
+ on NC.S_CODE=NB.KEY1 and NC.CREW_ID=NB.KEY2
+ where NC.DEL_FLAG='N'
+ and NC.S_CODE= $P{SHIPCODE} 
+ group by NC.CREW_ID) P 
+ where N.CREW_ID=P.CREW_ID
+ order by VAL2 desc, N.CREW_ID]]>
+		</queryString>
+		<field name="CREW_ID" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.label" value="CREW_ID"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="TB_CREW_INFO"/>
+		</field>
+		<field name="CREW_NAME" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.label" value="CREW_NAME"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="TB_CREW_INFO"/>
+		</field>
+		<field name="AMT_TOTAL_MONTH" class="java.lang.Integer">
+			<property name="com.jaspersoft.studio.field.label" value="AMT_TOTAL_MONTH"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="TB_CREW_INFO"/>
+		</field>
+		<field name="VAL2" class="java.lang.Long">
+			<property name="com.jaspersoft.studio.field.label" value="VAL2"/>
+		</field>
+		<field name="N_VAL2" class="java.lang.Long">
+			<property name="com.jaspersoft.studio.field.label" value="N_VAL2"/>
+		</field>
+		<field name="PVAL" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.label" value="PVAL"/>
+		</field>
+		<field name="FVAL" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.label" value="FVAL"/>
+		</field>
+	</subDataset>
+	<parameter name="YEAR" class="java.lang.String"/>
+	<parameter name="MONTH" class="java.lang.String"/>
+	<parameter name="SHIPCODE" class="java.lang.String"/>
+	<parameter name="SHIPNAME" class="java.lang.String"/>
+	<parameter name="TABLE" class="java.lang.String"/>
+	<parameter name="USERID" class="java.lang.String"/>
+	<parameter name="IMGPATH" class="java.lang.String"/>
+	<parameter name="PRE_YEAR" class="java.lang.String"/>
+	<parameter name="PRE_MONTH" class="java.lang.String"/>
+	<parameter name="PRE_TABLE" class="java.lang.String"/>
+	<queryString language="SQL">
+		<![CDATA[select * from TB_SHIP_INFO where S_CODE='S_00001']]>
+	</queryString>
+	<field name="S_CODE" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="S_CODE"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<field name="COMP_ID" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.label" value="COMP_ID"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<field name="S_NAME" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="S_NAME"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<field name="DESCR" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="DESCR"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<field name="DEL_FLAG" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="DEL_FLAG"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<field name="DEL_DATE" class="java.sql.Timestamp">
+		<property name="com.jaspersoft.studio.field.label" value="DEL_DATE"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<field name="MODIFY_DATE" class="java.sql.Timestamp">
+		<property name="com.jaspersoft.studio.field.label" value="MODIFY_DATE"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<field name="GUI_FLAG" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.label" value="GUI_FLAG"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="TB_SHIP_INFO"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="42" splitType="Stretch">
+		
+			<textField>
+				<reportElement x="0" y="0" width="555" height="42" uuid="259d1e61-0604-4e11-bd38-a7e49b8724a6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="HYGoThic-Medium" size="18" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{SHIPNAME}+" 선원별 월간 사용내역 보고서   ["+$P{YEAR}+"-"+$P{MONTH}+"]"]]></textFieldExpression>
+			</textField>
+
+		</band>
+	</title>
+	<detail>
+		<band height="40" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="2" width="90" height="30" uuid="fc6c4346-a35d-4ca1-8bb0-38d3c45f767f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="HYGoThic-Medium" size="14" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[■ 선원 수 :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="334" y="2" width="130" height="30" uuid="4598db90-b9e4-4ab9-b2a8-caa64d6017f1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="HYGoThic-Medium" size="14" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[■ 총 사용량 :]]></text>
+			</staticText>
+			<componentElement>
+				<reportElement x="90" y="2" width="91" height="30" uuid="f8863d54-8818-4842-8388-dda45a7f88a2">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+					<property name="net.sf.jasperreports.export.headertoolbar.table.name" value=""/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="crew_count" uuid="7083c140-c852-4cb4-875a-142dc11e45b4">
+						<datasetParameter name="SHIPCODE">
+							<datasetParameterExpression><![CDATA[$P{SHIPCODE}]]></datasetParameterExpression>
+						</datasetParameter>
+					</datasetRun>
+					<jr:column width="91" uuid="b6274055-5c71-4c3d-8f1a-575b3c923387">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement x="0" y="0" width="91" height="30" uuid="e9258009-8f61-4dd2-b140-26850c654a4f"/>
+								<textElement textAlignment="Left" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="14" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{count(*)}+"명"]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+			<componentElement>
+				<reportElement x="464" y="2" width="91" height="30" uuid="9f2222b5-7387-4f0f-92df-6f49a023c2c9">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+					<property name="net.sf.jasperreports.export.headertoolbar.table.name" value=""/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="total_data" uuid="4e43a7a5-1e19-4c9b-a1ca-61de368a90a1">
+						<datasetParameter name="SHIPCODE">
+							<datasetParameterExpression><![CDATA[$P{SHIPCODE}]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="TABLE">
+							<datasetParameterExpression><![CDATA[$P{TABLE}]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="ETIME">
+							<datasetParameterExpression><![CDATA[$P{YEAR}+$P{MONTH}+"31"]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="STIME">
+							<datasetParameterExpression><![CDATA[$P{YEAR}+$P{MONTH}+"01"]]></datasetParameterExpression>
+						</datasetParameter>
+					</datasetRun>
+					<jr:column width="91" uuid="f3987eec-c0c7-4884-be41-6dda8c0ff1a6">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement x="0" y="0" width="91" height="30" uuid="d7f7065a-f97a-46a2-afd2-7254c690f91a"/>
+								<textElement textAlignment="Left" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="14" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0").format($F{TOTAL})]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+		</band>
+		<band height="250">
+			<image scaleImage="RealSize">
+				<reportElement x="0" y="0" width="555" height="250" uuid="b4163d44-4066-40b8-864d-d7f4acf75478"/>
+				<box topPadding="15" leftPadding="10" bottomPadding="0" rightPadding="10">
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<imageExpression><![CDATA[$P{IMGPATH}+"/report_"+$P{USERID}+".png"]]></imageExpression>
+			</image>
+		</band>
+		<band height="32">
+			<staticText>
+				<reportElement x="0" y="2" width="280" height="30" uuid="2d34586b-93c4-46c0-8a13-2a8815f71d3f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="HYGoThic-Medium" size="14" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[■ 선원별 사용내역]]></text>
+			</staticText>
+		</band>
+		<band height="250">
+			<componentElement>
+				<reportElement x="1" y="6" width="552" height="54" uuid="4010be76-6afe-4302-a525-10b2935cb1cc">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="crew_usage" uuid="7e05b6d4-1d36-49ed-aebb-6884fffe5f21">
+						<datasetParameter name="STIME">
+							<datasetParameterExpression><![CDATA[$P{YEAR}+$P{MONTH}+"01000000"]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="ETIME">
+							<datasetParameterExpression><![CDATA[$P{YEAR}+$P{MONTH}+"31235959"]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="TABLE">
+							<datasetParameterExpression><![CDATA[$P{TABLE}]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="PRE_STIME">
+							<datasetParameterExpression><![CDATA[$P{PRE_YEAR}+$P{PRE_MONTH}+"01000000"]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="PRE_ETIME">
+							<datasetParameterExpression><![CDATA[$P{PRE_YEAR}+$P{PRE_MONTH}+"31235959"]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="PRE_TABLE">
+							<datasetParameterExpression><![CDATA[$P{PRE_TABLE}]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="SHIPCODE">
+							<datasetParameterExpression><![CDATA[$P{SHIPCODE}]]></datasetParameterExpression>
+						</datasetParameter>
+						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					</datasetRun>
+					<jr:column width="79" uuid="2a5ab522-4d3a-43b7-bfe4-5b30c0deacb5">
+						<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+						<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+						<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+						<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+						<jr:columnHeader style="Table 1_CH" height="27">
+							<staticText>
+								<reportElement x="0" y="0" width="79" height="27" uuid="b3c5d5c7-478f-4f9d-9b0a-25c79acf47bc">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="9" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<text><![CDATA[선원ID]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table 1_TD" height="27">
+							<textField>
+								<reportElement x="0" y="0" width="79" height="27" uuid="a3aef0c0-51e0-4795-b862-9fdbae5fffee">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="8" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{CREW_ID}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="79" uuid="0889e42f-2bf9-4ae6-88a8-ed418a92eb89">
+						<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+						<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+						<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+						<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+						<jr:columnHeader style="Table 1_CH" height="27">
+							<staticText>
+								<reportElement x="0" y="0" width="79" height="27" uuid="7a16f345-5841-49ce-87c5-b91a9332d171">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="9" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<text><![CDATA[선원 이름]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table 1_TD" height="27">
+							<textField>
+								<reportElement x="0" y="0" width="79" height="27" uuid="0bc96c9d-0aa3-4e53-a7d3-f4e4ebc586f4">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="8" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{CREW_NAME}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="79" uuid="fa1f81f3-c3c5-4c3a-8ca6-9bb621a2f92e">
+						<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+						<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+						<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+						<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+						<jr:columnHeader style="Table 1_CH" height="27">
+							<staticText>
+								<reportElement x="0" y="0" width="79" height="27" uuid="1296338a-7a0e-4f50-b5bc-5972687c4fd0">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="9" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<text><![CDATA[할당량(MB)]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table 1_TD" height="27">
+							<textField>
+								<reportElement x="0" y="0" width="79" height="27" uuid="4e0acf81-ae5f-43cc-804a-f69731795a00">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="8" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0").format($F{AMT_TOTAL_MONTH})]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="79" uuid="71a6236b-ff2a-4470-8286-e2a9767443ca">
+						<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+						<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+						<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+						<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+						<jr:columnHeader style="Table 1_CH" height="27">
+							<staticText>
+								<reportElement x="0" y="0" width="79" height="27" uuid="d56e523b-dff7-448a-ac22-8c4976a24a65">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="9"  pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<text><![CDATA[사용량(MB)]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table 1_TD" height="27">
+							<textField>
+								<reportElement x="0" y="0" width="79" height="27" uuid="4d006729-d983-4e05-8949-a5c13c360f80">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="8" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0").format($F{VAL2})]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="84" uuid="d49bb530-8a75-4980-9f0b-a6bb38fa7270">
+						<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+						<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+						<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+						<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+						<jr:columnHeader style="Table 1_CH" height="27">
+							<staticText>
+								<reportElement x="0" y="0" width="84" height="27" uuid="d9c468b1-199d-413a-8195-e6a28c40c40f">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="9"  pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<text><![CDATA[전월 사용량(MB)]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table 1_TD" height="27">
+							<textField>
+								<reportElement x="0" y="0" width="84" height="27" uuid="a2bf983b-86b0-4ecd-b1c8-47aa37f7d322">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="8" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0").format($F{N_VAL2})]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="79" uuid="2fabf083-7cf4-49c9-be24-09ba2791aeb6">
+						<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+						<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+						<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+						<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+						<jr:columnHeader style="Table 1_CH" height="27">
+							<staticText>
+								<reportElement x="0" y="0" width="79" height="27" uuid="73311473-8ac5-4564-9c2a-49483279c33e">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="9" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<text><![CDATA[전월대비]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table 1_TD" height="27">
+							<textField>
+								<reportElement x="0" y="0" width="79" height="27" uuid="295cab8a-69c5-4f09-a545-2d9f7864f4ec">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="8" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{PVAL}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="73" uuid="349648be-1a8e-4875-96fc-01788a441467">
+						<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+						<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+						<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+						<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<jr:columnHeader style="Table 1_CH" height="27">
+							<staticText>
+								<reportElement x="0" y="0" width="73" height="27" uuid="5032fa4d-23a0-4935-bb24-290bc4bc5ce8">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="9" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<text><![CDATA[전월대비(%)]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table 1_TD" height="27">
+							<textField>
+								<reportElement x="0" y="0" width="73" height="27" uuid="b0613e28-9a6b-4f1e-b1c0-a0779147d867">
+									<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+									<property name="com.jaspersoft.studio.table.style.table_header" value="Table 1_TH"/>
+									<property name="com.jaspersoft.studio.table.style.column_header" value="Table 1_CH"/>
+									<property name="com.jaspersoft.studio.table.style.detail" value="Table 1_TD"/>
+								</reportElement>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="HYGoThic-Medium" size="8" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{FVAL}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="24" splitType="Stretch">
+			<textField evaluationTime="Report">
+				<reportElement x="276" y="3" width="100" height="20" uuid="e821b4ed-fa95-492e-ac1c-3e8c71e752be"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font fontName="HYGoThic-Medium" size="8" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" / " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="176" y="3" width="100" height="20" uuid="a8bd570d-6f54-47bf-a4c7-5da85856aca4"/>
+				<textElement textAlignment="Right" verticalAlignment="Bottom">
+					<font fontName="HYGoThic-Medium" size="8" pdfFontName="HYGoThic-Medium" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

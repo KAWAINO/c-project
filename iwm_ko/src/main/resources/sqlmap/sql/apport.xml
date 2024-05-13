@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.apport">
+
+	<!-- shipList -->
+    <select id="selectShipList" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT S.S_CODE
+		     , S.S_NAME
+		     , C.COMP_NAME
+		  FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+		 WHERE S.COMP_ID = C.COMP_ID
+		   AND S.DEL_FLAG = 'N'
+		   <if test="comp_id != 0">
+		   AND C.COMP_ID = #{ comp_id }
+		   </if>
+	     ORDER BY C.COMP_NAME, S.S_NAME
+    </select>
+    
+    <!-- portList -->
+    <select id="selectPortList" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT B.RULE_NAME, A.COMP_NAME, A.S_CODE, A.S_NAME, B.PORT_FROM, B.PORT_TO, B.USE_FLAG, B.DESCR
+	      FROM (
+				   SELECT S.S_CODE, S.S_NAME, C.COMP_NAME
+				   FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+				   WHERE S.COMP_ID=C.COMP_ID
+	   		   )A, TB_AP_PORT_LIST B
+	     WHERE A.S_CODE=B.S_CODE
+	       AND B.S_CODE = #{ searchShipCode }
+	     ORDER BY B.RULE_NAME
+    </select>
+    
+    <!-- chkName -->
+    <select id="chkName" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT RULE_NAME
+    	  FROM TB_AP_PORT_LIST
+    	 WHERE S_CODE = #{ addScode }
+    	   AND RULE_NAME = #{ addRuleName }
+    </select>
+    
+    <!-- chkRange -->
+    <select id="chkRange" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT PORT_FROM
+    		 , PORT_TO
+    	  FROM TB_AP_PORT_LIST
+    	 WHERE S_CODE = #{ addScode }
+    	   AND RULE_NAME != #{ addRuleName }
+    </select>
+    
+    <insert id="insertPort" parameterType="iwm_ko.apport.model.ApportVo">
+    	INSERT INTO TB_AP_PORT_LIST (S_CODE, RULE_NAME, PORT_FROM, PORT_TO, USE_FLAG, DESCR, MODIFY_DATE)
+    	VALUES (#{ addScode }, #{ addRuleName }, #{ addPortFrom }, #{ addPortTo }, #{ addUseFlag }, #{ addDescr }, NOW())
+    </insert>
+   
+    <!-- 수정 modal 이동 -->
+    <select id="selectApport" parameterType="java.util.HashMap" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT PORT_FROM
+    		 , PORT_TO
+    		 , USE_FLAG
+    		 , DESCR
+    	  FROM TB_AP_PORT_LIST
+    	 WHERE S_CODE = #{ s_code }
+    	   AND RULE_NAME = #{ rule_name }
+    </select>
+    
+    <!-- 수정 -->
+    <update id="chgPort" parameterType="iwm_ko.apport.model.ApportVo">
+    	UPDATE TB_AP_PORT_LIST 
+    	<set>
+    		   PORT_FROM = #{ updPortFrom }
+    		 , PORT_TO = #{ updPortTo }
+    		 , USE_FLAG = #{ updUseFlag }
+    		 , DESCR = #{ updDescr }
+    		 , MODIFY_DATE = NOW()
+    	</set>
+    	 WHERE S_CODE = #{ updScode }
+    	   AND RULE_NAME = #{ updRuleName }
+    </update>
+    
+    <!-- 삭제 -->
+	<delete id="deleteApport" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		DELETE FROM TB_AP_PORT_LIST
+		 WHERE S_CODE = #{ s_code }
+		   AND RULE_NAME = #{ rule_name }
+	</delete>
+	
+	<!-- chkPort -->
+    <select id="chkPort" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT S_CODE
+    	  FROM TB_AP_ALL_PORT
+    	 WHERE S_CODE = #{ s_code }
+    </select>
+    
+    <!-- chgAllPort -->
+    <update id="chgAllPort" parameterType="iwm_ko.apport.model.ApportVo">
+    	UPDATE TB_AP_ALL_PORT
+    	<set>
+    		   ALL_FLAG = #{ allowAllPort }
+    		 , MODIFY_DATE = NOW()
+    		 , GUI_FLAG = 'Y'
+    	</set>
+    	 WHERE S_CODE = #{ s_code }
+    </update>
+    
+    <!-- insertAllPort -->
+    <insert id="insertAllPort" parameterType="iwm_ko.apport.model.ApportVo">
+    	INSERT INTO TB_AP_ALL_PORT (S_CODE, ALL_FLAG, MODIFY_DATE)
+    	VALUES (#{ s_code }, #{ allowAllPort }, NOW())
+    </insert>
+    
+    <!-- shipCode -->
+    <select id="shipCode" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT S_CODE
+		  FROM TB_SHIP_INFO
+		 WHERE DEL_FLAG = 'N'
+	       AND NOT S_CODE = #{ s_code }
+    </select>
+    
+    <!-- delShipCode -->
+	<delete id="delShipCode" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		DELETE FROM TB_AP_PORT_LIST
+		 WHERE S_CODE = #{ shipCode }
+	</delete>
+	
+	<!-- insShipCode -->
+    <insert id="insShipCode" parameterType="iwm_ko.apport.model.ApportVo">
+    	INSERT INTO TB_AP_PORT_LIST (S_CODE, RULE_NAME, PORT_FROM, PORT_TO, USE_FLAG, DESCR, MODIFY_DATE)
+    	SELECT #{ shipCode }, RULE_NAME, PORT_FROM, PORT_TO, USE_FLAG, DESCR, NOW()
+    	  FROM TB_AP_PORT_LIST
+    	 WHERE S_CODE = #{ s_code }
+    </insert>
+    
+	<!-- chkShipCode -->
+    <select id="chkShipCode" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT S_CODE
+    	  FROM TB_AP_ALL_PORT
+    	 WHERE S_CODE = #{ shipCode }
+    </select>
+    
+    <!-- chgApAllPort -->
+    <update id="chgApAllPort" parameterType="iwm_ko.apport.model.ApportVo">
+    	UPDATE TB_AP_ALL_PORT
+    	<set>
+    		   ALL_FLAG = #{ allowAllPort }
+    		 , MODIFY_DATE = NOW()
+    		 , GUI_FLAG = 'Y'
+    	</set>
+    	 WHERE S_CODE = #{ shipCode }
+    </update>
+    
+    <!-- insertApAllPort -->
+    <insert id="insertApAllPort" parameterType="iwm_ko.apport.model.ApportVo">
+    	INSERT INTO TB_AP_ALL_PORT (S_CODE, ALL_FLAG, MODIFY_DATE)
+    	VALUES (#{ shipCode }, #{ allowAllPort }, NOW())
+    </insert>
+    
+    <!-- chkRange -->
+    <select id="updateChkRange" parameterType="iwm_ko.apport.model.ApportVo" resultType="iwm_ko.apport.model.ApportVo">
+    	SELECT PORT_FROM
+    		 , PORT_TO
+    	  FROM TB_AP_PORT_LIST
+    	 WHERE S_CODE = #{ updScode }
+    	   AND RULE_NAME != #{ updRuleName }
+    </select>
+
+</mapper>

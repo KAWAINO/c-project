@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.cuser">
+
+	<!-- grade 리스트 조회 -->
+    <select id="selectGradeList" parameterType="iwm_ko.cuser.model.CuserVo" resultType="iwm_ko.cuser.model.CuserVo">
+		SELECT A.GRADE
+			 , A.GNAME 
+	      FROM TB_GRADE_INFO_CENTER A
+	</select>
+	
+	<!-- cuser 리스트 조회 -->
+    <select id="selectCuserList" parameterType="iwm_ko.cuser.model.CuserVo" resultType="iwm_ko.cuser.model.CuserVo">
+		SELECT A.USER_ID, A.COMP_NAME, A.USER_NAME, A.GNAME
+			 , A.TEAM_NAME, A.PHONE, A.MOBILE, A.EMAIL
+		  FROM (
+		  			SELECT U.USER_ID, U.USER_NAME, U.USER_GRADE, G.GNAME
+		  				 , U.TEAM_NAME, U.PHONE, U.MOBILE, U.EMAIL
+		  				 , U.DEL_FLAG, U.COMP_ID, U.COMP_NAME
+				      FROM (
+				   		   		SELECT UI.COMP_ID, UI.USER_ID, UI.USER_NAME, UI.USER_GRADE
+				   		   			 , UI.TEAM_NAME, UI.PHONE, UI.MOBILE, UI.EMAIL
+				   		   			 , UI.DEL_FLAG, SI.COMP_NAME
+				   		          FROM TB_USER_INFO_CENTER UI 
+				   			      LEFT JOIN TB_SCOMP_INFO SI
+				   					ON UI.COMP_ID=SI.COMP_ID
+				   			) U, TB_GRADE_INFO_CENTER G
+				     WHERE U.USER_GRADE = G.GRADE
+				) A
+		  WHERE A.DEL_FLAG = 'N'
+
+		  <if test="searchCompId != null and searchCompId != ''">
+		  	AND A.COMP_ID = #{ searchCompId }
+		  </if>
+		  <if test="searchUserName != null and searchUserName != ''">
+		  	AND A.USER_NAME LIKE CONCAT('%', #{ searchUserName }, '%')
+		  </if>
+		  <if test="searchUserId != null and searchUserId != ''">
+		  	AND A.USER_ID LIKE CONCAT('%', #{ searchUserId }, '%')
+		  </if>
+		  <if test="searchGrade != null and searchGrade != ''">
+		  	AND A.USER_GRADE = #{ searchGrade }
+		  </if>
+		  <if test="scomp != 0 and scomp != null">
+		  	AND A.COMP_ID = #{ scomp }
+		  </if>
+		  
+		  ORDER BY USER_ID
+		  
+	  	  <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+          	LIMIT #{startrow}, #{fetchrow}
+    	  </if>
+	</select>
+
+	<!-- paging 위한 total 리스트 조회 -->
+    <select id="totalCuserList" parameterType="iwm_ko.cuser.model.CuserVo" resultType="int">
+		SELECT COUNT(*) AS alarmHisCnt
+		  FROM (
+		  		 SELECT 1, A.USER_ID, A.COMP_NAME, A.USER_NAME
+					   , A.GNAME, A.TEAM_NAME, A.PHONE, A.MOBILE, A.EMAIL
+				   FROM (
+			  				SELECT U.USER_ID, U.USER_NAME, U.USER_GRADE, G.GNAME
+			  				 , U.TEAM_NAME, U.PHONE, U.MOBILE, U.EMAIL
+			  				 , U.DEL_FLAG, U.COMP_ID, U.COMP_NAME
+					      FROM (
+				   		   		SELECT UI.COMP_ID, UI.USER_ID, UI.USER_NAME, UI.USER_GRADE
+				   		   			  , UI.TEAM_NAME, UI.PHONE, UI.MOBILE, UI.EMAIL
+				   		   			  , UI.DEL_FLAG, SI.COMP_NAME
+				   		           FROM TB_USER_INFO_CENTER UI 
+				   			        LEFT JOIN TB_SCOMP_INFO SI
+				   					    ON UI.COMP_ID=SI.COMP_ID
+				   			  ) U, TB_GRADE_INFO_CENTER G
+				        WHERE U.USER_GRADE = G.GRADE
+					  )A  
+			     WHERE A.DEL_FLAG = 'N'		
+			     
+		  <if test="searchCompId != null and searchCompId != ''">
+		  	AND A.COMP_ID = #{ searchCompId }
+		  </if>
+		  <if test="searchUserName != null and searchUserName != ''">
+		  	AND A.USER_NAME LIKE CONCAT('%', #{ searchUserName }, '%')
+		  </if>
+		  <if test="searchUserId != null and searchUserId != ''">
+		  	AND A.USER_ID LIKE CONCAT('%', #{ searchUserId }, '%')
+		  </if>
+		  <if test="searchGrade != null and searchGrade != ''">
+		  	AND A.USER_GRADE = #{ searchGrade }
+		  </if>    
+		  <if test="scomp != 0 and scomp != null">
+		  	AND A.COMP_ID = #{ scomp }
+		  </if>
+		   
+			  )AS COUNT 
+		
+	    ORDER BY USER_ID
+	</select>
+	
+	<!-- 운영자 ID 중복검사 -->
+	<select id="chkInsertCuser" parameterType="iwm_ko.cuser.model.CuserVo" resultType="iwm_ko.cuser.model.CuserVo">
+		SELECT USER_ID 
+		  FROM TB_USER_INFO_CENTER 
+		 WHERE USER_ID = #{ addUserId } 
+		   AND DEL_FLAG = 'N'
+	</select>
+	
+	<!-- del_flag 체크 -->
+	<select id="chkDelFlag" parameterType="iwm_ko.cuser.model.CuserVo" resultType="iwm_ko.cuser.model.CuserVo">
+		SELECT DEL_FLAG
+		  FROM TB_USER_INFO_CENTER 
+		 WHERE USER_ID = #{ addUserId } 
+	</select>
+	
+	<!-- 기존 유저 수정 -->
+	<update id="changeUser" parameterType="iwm_ko.cuser.model.CuserVo">
+		UPDATE TB_USER_INFO_CENTER
+		<set>
+			   PASSWD = #{ addPassWd }
+			 , USER_NAME = #{ addUserName }
+		     , USER_GRADE = #{ addUserGrade }
+		     , TEAM_NAME = ''
+		     , PHONE = ''
+		     , MOBILE = ''
+		     , EMAIL = ''
+		     , COMP_ID = #{ addCompId }
+		     , DEL_FLAG = 'N'
+		     , MODIFY_DATE = NOW()
+		     , GUI_FLAG = 'Y'
+		     , PWD_CHANGE_DATE = NOW()
+		</set>
+		 WHERE USER_ID = #{ addUserId }
+	</update>
+	
+	<!-- iwm 운영자 추가 -->
+	<insert id="insertCuser" parameterType="iwm_ko.cuser.model.CuserVo">
+		INSERT INTO TB_USER_INFO_CENTER 
+		(
+			USER_ID, PASSWD, USER_NAME, USER_GRADE, TEAM_NAME, 
+			PHONE, MOBILE, EMAIL, COMP_ID, MODIFY_DATE, 
+			DEL_DATE, PWD_CHANGE_DATE
+		)
+		VALUES 
+		(
+			#{ addUserId }, 
+			#{ addPassWd }, 
+			#{ addUserName }, 
+			#{ addUserGrade }, 
+			'', 
+			'', 
+			'', 
+			'', 
+			#{ addCompId }, 
+			NOW(), 
+			NOW(), 
+			NOW()
+		)
+	</insert>
+	
+	<!-- Lock 추가 -->
+	<insert id="insertFailCnt" parameterType="iwm_ko.cuser.model.CuserVo">
+		INSERT INTO TB_USER_INFO_CENTER_LOCK
+		(
+			USER_ID
+		  , FAIL_CNT
+		  , MODIFY_DATE
+		  , GUI_FLAG
+		)
+		VALUES 
+		(
+			#{ addUserId } 
+		  , 0
+		  , NOW()
+		  , 'Y'
+		)
+	</insert>
+	
+	<!-- 수정 modal 이동 -->
+    <select id="selectCuserInfo" parameterType="java.util.HashMap" resultType="iwm_ko.cuser.model.CuserVo">
+		SELECT A.USER_ID, A.USER_NAME, A.USER_GRADE, A.GNAME, A.TEAM_NAME
+		     , A.PHONE, A.MOBILE, A.EMAIL, A.COMP_ID, L.FAIL_CNT
+		  FROM (
+			     SELECT U.USER_ID, U.USER_NAME, U.USER_GRADE, G.GNAME, U.TEAM_NAME
+				 	  , U.PHONE, U.MOBILE, U.EMAIL, U.COMP_ID, U.DEL_FLAG
+			       FROM TB_USER_INFO_CENTER U, TB_GRADE_INFO_CENTER G
+			      WHERE U.USER_GRADE = G.GRADE
+		 	   ) A
+		  LEFT JOIN TB_USER_INFO_CENTER_LOCK L
+		    ON A.USER_ID = L.USER_ID
+		 WHERE A.USER_ID = #{ user_id }
+		   AND A.DEL_FLAG = 'N'
+	</select>
+	
+	<!--  -->
+    <select id="getLockCnt" parameterType="iwm_ko.cuser.model.CuserVo" resultType="String">
+    	SELECT VAL
+    	  FROM TB_CONF_VAL
+    	 WHERE CONF_NAME = 'USER_LOGIN_LOCK_COUNT'
+    </select>
+	
+	<!-- iwm 운영자 수정 -->
+	<update id="updateCuser" parameterType="iwm_ko.cuser.model.CuserVo">
+		UPDATE TB_USER_INFO_CENTER
+		<set>
+			<if test="cngPwd != null">PASSWD = #{ updPassWd },</if>
+			   USER_NAME = #{ updUserName }
+		     , USER_GRADE = #{ updUserGrade }
+		     , COMP_ID = #{ updCompId }
+		     , MODIFY_DATE = NOW()
+		     , GUI_FLAG = 'Y'
+		     , PWD_CHANGE_DATE = NOW()
+		</set>
+		 WHERE USER_ID = #{ updUserId }
+	</update>
+	
+	<!-- iwm 운영자 삭제 -->
+	<update id="deleteCuser" parameterType="iwm_ko.cuser.model.CuserVo">
+		UPDATE TB_USER_INFO_CENTER
+		<set>
+			   DEL_FLAG = 'Y'
+			 , DEL_DATE = NOW()
+			 , GUI_FLAG = 'Y'
+		</set>
+		WHERE USER_ID = #{ user_id }
+	</update>
+	
+	<delete id="deleteLock" parameterType="iwm_ko.cuser.model.CuserVo">
+		DELETE FROM TB_USER_INFO_CENTER_LOCK
+		 WHERE USER_ID = #{ user_id }
+	</delete>
+	
+	<!-- 계정 잠금 해제 -->
+	<update id="unLockUser" parameterType="iwm_ko.cuser.model.CuserVo">
+		UPDATE TB_USER_INFO_CENTER_LOCK
+		<set>
+			   FAIL_CNT = 0
+			 , MODIFY_DATE=NOW()
+			 , GUI_FLAG = 'Y'
+		</set>
+		WHERE USER_ID = #{ user_id }
+	</update>
+	
+</mapper>

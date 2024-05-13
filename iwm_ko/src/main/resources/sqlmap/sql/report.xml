@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.report">
+
+
+    <select id="selectCompList" parameterType="iwm_ko.report.model.ReportVo" resultType="iwm_ko.report.model.ReportVo">
+
+        select
+        COMP_ID AS comp_id ,
+        COMP_NAME AS comp_name
+        from
+        TB_SCOMP_INFO
+        where
+        DEL_FLAG='N'
+        <if test="sessionCompId != 0">
+            AND COMP_ID = #{sessionCompId}
+        </if>
+        ORDER BY
+        COMP_NAME
+
+    </select>
+
+
+    <select id="selectShipNameList" parameterType="iwm_ko.report.model.ReportVo" resultType="iwm_ko.report.model.ReportVo">
+
+        SELECT
+        S.S_CODE AS s_code,
+        S.S_NAME AS s_name,
+        C.COMP_NAME AS comp_name
+        FROM
+        TB_SHIP_INFO S,
+        TB_SCOMP_INFO C
+        WHERE
+        S.COMP_ID = C.COMP_ID
+
+        <if test="comp_id != null and comp_id != 'select' and comp_id != ''">
+            AND S.COMP_ID=#{comp_id}
+        </if>
+        ORDER BY S.S_NAME
+
+    </select>
+
+    <select id="selectShipList" parameterType="iwm_ko.report.model.ReportVo" resultType="iwm_ko.report.model.ReportVo">
+
+        SELECT
+        S.S_CODE AS s_code,
+        S.S_NAME AS s_name,
+        C.COMP_NAME AS comp_name
+        FROM
+        TB_SHIP_INFO S,
+        TB_SCOMP_INFO C
+        WHERE
+        S.COMP_ID = C.COMP_ID
+        AND
+        S.DEL_FLAG='N'
+
+        <if test="sessionCompId != 0">
+            AND S.COMP_ID=#{sessionCompId}
+        </if>
+        ORDER BY C.COMP_NAME, S.S_NAME
+    </select>
+
+
+    <select id="chkTable" parameterType="iwm_ko.report.model.ReportVo" resultType="String">
+
+        select
+        FNC_GET_TABLE_BY_SCODE
+        (
+        'TB_STAT_CREW_H',
+        #{stime},
+        #{etime},
+        #{searchSCode}
+        )
+        GET from dual
+    </select>
+
+
+    <select id="preTable" parameterType="iwm_ko.report.model.ReportVo" resultType="String">
+
+        select
+        FNC_GET_TABLE_BY_SCODE
+        (
+        'TB_STAT_CREW_H',
+        #{preSTime},
+        #{preETime},
+        #{searchSCode}
+        )
+        GET from dual
+
+    </select>
+
+
+    <select id="getDataList" parameterType="iwm_ko.report.model.ReportVo" resultType="iwm_ko.report.model.ReportVo">
+        select C.CREW_ID AS crew_id,
+        C.CREW_NAME AS crew_name,
+        C.AMT_TOTAL_MONTH AS amt_total_month,
+        CONVERT(
+        (
+        CASE WHEN B.VAL2 IS NULL THEN 0 ELSE SUM(B.VAL2) END), INT) AS val2
+        from
+        TB_CREW_INFO C
+        left join
+        (
+        select
+        KEY1,
+        KEY2,
+        VAL2,
+        MON_TIME
+        from ${tableName} A
+        where
+        MON_TIME
+        between #{stime} and #{etime}
+        ) B
+        on
+        C.S_CODE=B.KEY1
+        and
+        C.CREW_ID=B.KEY2
+        where
+        C.DEL_FLAG='N'
+        and C.S_CODE=#{searchSCode}
+        group by C.CREW_ID
+        order by
+        CONVERT
+        (
+        (CASE
+        WHEN
+        B.VAL2
+        IS NULL
+        THEN 0
+        ELSE
+        SUM(B.VAL2) END), INT) desc,
+        C.CREW_ID
+
+    </select>
+
+
+    <select id="getShipName" parameterType="iwm_ko.report.model.ReportVo" resultType="String">
+
+        select
+        S_NAME AS s_name
+        FROM
+        TB_SHIP_INFO
+        WHERE
+        S_CODE = #{searchSCode}
+
+    </select>
+
+</mapper>
+

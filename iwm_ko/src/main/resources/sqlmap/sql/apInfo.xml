@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.apInfo">
+
+	<!-- 대역폭 리스트 조회 -->
+    <select id="selectBandList" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT BAND_WIDTH
+    	  FROM TB_BAND_WIDTH
+    	 ORDER BY BAND_WIDTH
+    </select>
+    
+    <!-- 선박 리스트 조회 -->
+    <!-- <select id="selectShipList" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT S_CODE
+    		 , S_NAME 
+    	  FROM TB_SHIP_INFO
+    	 WHERE DEL_FLAG = 'N'
+    	  <if test="comp_id != null and comp_id != ''">
+		   AND COMP_ID = #{ comp_id }
+		  </if>
+    	  <if test="searchCompId != null and searchCompId != ''">
+		   AND COMP_ID = #{ searchCompId }
+		  </if>
+    	  <if test="addCompId != null and addCompId != ''">
+		   AND COMP_ID = #{ addCompId }
+		  </if>
+		  <if test="updCompId != null and updCompId != ''">
+		   AND COMP_ID = #{ updCompId }
+		  </if>
+		 ORDER BY S_NAME 
+    </select> -->
+
+    <!-- apinfo 리스트 조회 -->
+    <select id="selectApInfoList" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT MAC, AP_NAME, SERIAL_NO, IP_NO, COMP_ID
+    		 , COMP_NAME, S_NAME, S_CODE, BAND_WIDTH, CON_USER
+    		 , STATUS, FW_VERSION, DESCR, WIFI_CONN_FLAG, CONN_TIME
+		  FROM (
+				SELECT A.MAC MAC, A.AP_NAME AP_NAME, A.SERIAL_NO SERIAL_NO, A.IP_NO IP_NO, A.COMP_ID COMP_ID
+				     , A.COMP_NAME COMP_NAME, A.S_NAME S_NAME, A.S_CODE S_CODE, A.BAND_WIDTH BAND_WIDTH, A.CON_USER CON_USER
+				     , (CASE WHEN B.STATUS IS NULL THEN '2' ELSE B.STATUS END) STATUS
+				     , B.FW_VERSION FW_VERSION, A.DESCR DESCR, A.DEL_FLAG DEL_FLAG, WIFI_CONN_FLAG, CONN_TIME
+				  FROM (
+				        SELECT B.MAC, B.AP_NAME, B.SERIAL_NO, B.IP_NO, A.COMP_ID
+				             , A.COMP_NAME, A.S_NAME, B.S_CODE, B.DESCR, B.DEL_FLAG
+				             , B.BAND_WIDTH, B.CON_USER, D.WIFI_CONN_FLAG,D.CONN_TIME
+				          FROM (
+							    SELECT S.S_CODE, S.S_NAME, S.COMP_ID, C.COMP_NAME
+							      FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+							     WHERE S.COMP_ID = C.COMP_ID
+				               ) A, TB_AP_INFO B
+				          LEFT JOIN TB_AP_INFO_SUB D
+				            ON B.MAC = D.MAC
+				           AND B.S_CODE = D.S_CODE
+				         WHERE A.S_CODE = B.S_CODE
+		               ) A 
+		          LEFT JOIN <if test="searchCompId == ''">
+		          				TB_AP_STATUS B
+		          			</if>
+		          			<if test="searchCompId != null and searchCompId != ''">
+		          				( SELECT AA.* FROM TB_AP_STATUS AA, TB_SCOMP_INFO BB, TB_SHIP_INFO CC
+								   WHERE AA.S_CODE = CC.S_CODE
+									 AND BB.COMP_ID = CC.COMP_ID
+									 AND BB.COMP_ID = #{ searchCompId } ) B
+		          			</if>
+		            ON A.MAC = B.MAC
+		      ) C
+		WHERE DEL_FLAG = 'N'
+		
+		<if test="searchCompId != null and searchCompId != ''">
+		  AND COMP_ID = #{ searchCompId }
+		</if>
+		<if test="scomp != 0 and scomp != null">
+		  AND COMP_ID = #{ scomp }
+		</if>
+		<if test="searchStatus != null and searchStatus != ''">
+		  AND STATUS = #{ searchStatus }
+		</if>
+		<if test="searchShipName != null and searchShipName != ''">
+		  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+		</if>
+		<if test="searchApName != null and searchApName != ''">
+		  AND AP_NAME LIKE CONCAT('%', #{ searchApName }, '%')
+		</if>
+		
+		ORDER BY S_CODE, AP_NAME
+		
+	  <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+      	LIMIT #{startrow}, #{fetchrow}
+   	  </if>
+    </select>
+    
+    <!-- 페이징 -->
+    <select id="totalApInfoList" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="int">
+        SELECT COUNT(*)
+  		  FROM (
+		    	SELECT MAC, AP_NAME, SERIAL_NO, IP_NO, COMP_ID
+		    		 , COMP_NAME, S_NAME, S_CODE, BAND_WIDTH, CON_USER
+		    		 , STATUS, FW_VERSION, DESCR, WIFI_CONN_FLAG, CONN_TIME
+				  FROM (
+						SELECT A.MAC MAC, A.AP_NAME AP_NAME, A.SERIAL_NO SERIAL_NO, A.IP_NO IP_NO, A.COMP_ID COMP_ID
+						     , A.COMP_NAME COMP_NAME, A.S_NAME S_NAME, A.S_CODE S_CODE, A.BAND_WIDTH BAND_WIDTH, A.CON_USER CON_USER
+						     , (CASE WHEN B.STATUS IS NULL THEN '2' ELSE B.STATUS END) STATUS
+						     , B.FW_VERSION FW_VERSION, A.DESCR DESCR, A.DEL_FLAG DEL_FLAG, WIFI_CONN_FLAG, CONN_TIME
+						  FROM (
+						        SELECT B.MAC, B.AP_NAME, B.SERIAL_NO, B.IP_NO, A.COMP_ID
+						             , A.COMP_NAME, A.S_NAME, B.S_CODE, B.DESCR, B.DEL_FLAG
+						             , B.BAND_WIDTH, B.CON_USER, D.WIFI_CONN_FLAG,D.CONN_TIME
+						          FROM (
+									    SELECT S.S_CODE, S.S_NAME, S.COMP_ID, C.COMP_NAME
+									      FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+									     WHERE S.COMP_ID = C.COMP_ID
+						               ) A, TB_AP_INFO B
+						          LEFT JOIN TB_AP_INFO_SUB D
+						            ON B.MAC = D.MAC
+						           AND B.S_CODE = D.S_CODE
+						         WHERE A.S_CODE = B.S_CODE
+				               ) A 
+				          LEFT JOIN <if test="searchCompId == ''">
+		          						TB_AP_STATUS B
+				          			</if>
+				          			<if test="searchCompId != null and searchCompId != ''">
+				          				( SELECT AA.* FROM TB_AP_STATUS AA, TB_SCOMP_INFO BB, TB_SHIP_INFO CC
+										   WHERE AA.S_CODE = CC.S_CODE
+											 AND BB.COMP_ID = CC.COMP_ID
+											 AND BB.COMP_ID = #{ searchCompId } ) B
+				          			</if>
+				            ON A.MAC = B.MAC
+				      ) C
+				WHERE DEL_FLAG = 'N'
+				
+				<if test="searchCompId != null and searchCompId != ''">
+				  AND COMP_ID = #{ searchCompId }
+				</if>
+				<if test="scomp != 0 and scomp != null">
+				  AND COMP_ID = #{ scomp }
+				</if>
+				<if test="searchStatus != null and searchStatus != ''">
+				  AND STATUS = #{ searchStatus }
+				</if>
+				<if test="searchShipName != null and searchShipName != ''">
+				  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+				</if>
+				<if test="searchApName != null and searchApName != ''">
+				  AND AP_NAME LIKE CONCAT('%', #{ searchApName }, '%')
+				</if>
+				
+			   ) COUNT
+			    
+			ORDER BY S_CODE, AP_NAME
+    </select>
+    
+    <!-- 선박명 조회 -->
+    <select id="selectShipList" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT S_CODE
+    		 , S_NAME
+    	  FROM TB_SHIP_INFO
+    	 WHERE DEL_FLAG = 'N'
+		  <if test="searchCompId != null and searchCompId != ''">
+		   AND COMP_ID = #{ searchCompId }
+		  </if>
+    	 ORDER BY S_NAME
+    </select>
+    
+    <!-- mac 중복검사 -->
+    <select id="chkMac" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT MAC
+    	  FROM TB_AP_INFO
+    	 WHERE MAC = UPPER(#{ addMac })
+    	   AND S_CODE = #{ addShipName }
+    	   AND DEL_FLAG = 'N'
+    </select>
+    
+    <!-- ap_name 중복검사 -->
+    <select id="chkName" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT AP_NAME
+    	  FROM TB_AP_INFO
+    	 WHERE AP_NAME = #{ addApName }
+		   AND MAC != UPPER(#{ addMac })
+    	   AND S_CODE = #{ addShipName }
+    	   AND DEL_FLAG = 'N'
+    </select>
+    
+    <!-- flag 체크 -->
+    <select id="chkFlag" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT DEL_FLAG
+    	  FROM TB_AP_INFO
+    	 WHERE MAC = UPPER(#{ addMac })
+    	   AND S_CODE = #{ addShipName }
+    </select>
+    
+    <!-- 기존 ap 데이터 수정 -->
+	<update id="changeAp" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		UPDATE TB_AP_INFO
+		<set>
+			   S_CODE = #{ addShipName }
+			 , AP_NAME = #{ addApName }
+			 , SERIAL_NO = #{ addSerial }
+			 , IP_NO = #{ addIpNumber }
+			 , BAND_WIDTH = #{ addBand }
+			 , CON_USER = #{ addConUser }
+			 , DESCR = #{ addDescr }
+			 , GUI_FLAG = 'Y'
+			 , DEL_FLAG = 'N'
+			 , MODIFY_DATE = NOW()
+		</set>
+		 WHERE MAC = UPPER(#{ addMac })
+		   AND S_CODE = #{ addShipName }
+	</update>
+    
+    <!-- apinfo 신규등록 -->
+	<insert id="insertApInfo" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		INSERT INTO TB_AP_INFO
+		(
+			MAC
+		  , S_CODE
+		  , AP_NAME
+		  , SERIAL_NO
+		  , BAND_WIDTH
+		  , CON_USER
+		  , DESCR
+		  , IP_NO
+		  , IP_ADDR
+		  , MODIFY_DATE
+		  , DEL_DATE
+		)
+		VALUES
+		(
+			UPPER(#{ addMac })
+		  , #{ addShipName }
+		  , #{ addApName }
+		  , #{ addSerial }
+		  , #{ addBand }
+		  , #{ addConUser }
+		  , #{ addDescr }
+		  , #{ addIpNumber }
+		  , ''
+		  , NOW()
+		  , NOW()
+		)
+	</insert>
+	
+	<!-- 수정 modal 이동 -->
+    <select id="selectApInfo" parameterType="java.util.HashMap" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT B.MAC, B.AP_NAME, B.SERIAL_NO, B.IP_NO, A.COMP_ID
+		     , A.COMP_NAME, A.S_NAME, B.S_CODE, B.DESCR, B.DEL_FLAG
+		     , B.BAND_WIDTH, B.CON_USER, D.WIFI_CONN_FLAG, D.CONN_TIME
+		  FROM (
+			   	SELECT S.S_CODE, S.S_NAME, S.COMP_ID, C.COMP_NAME
+			   	FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+			   	WHERE S.COMP_ID = C.COMP_ID
+			   ) A, TB_AP_INFO B
+		  LEFT JOIN TB_AP_INFO_SUB D
+		    ON B.MAC = D.MAC
+		   AND B.S_CODE = D.S_CODE
+		 WHERE A.S_CODE = B.S_CODE
+		   AND B.DEL_FLAG = 'N'
+		   AND B.MAC = #{ mac }
+		   AND B.S_CODE = #{ s_code }
+    </select>
+    
+    <!-- subdata 중복검사 -->
+    <select id="chkSubData" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT MAC
+    	  FROM TB_AP_INFO_SUB
+    	 WHERE MAC = UPPER(#{ addMac })
+    	   AND S_CODE = #{ addShipName }
+    </select>
+    
+    <!-- 기존 ap 데이터 수정 -->
+	<update id="changeApSub" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		UPDATE TB_AP_INFO_SUB
+		<set>
+			   WIFI_CONN_FLAG = #{ addWIFI }
+			 , CONN_TIME = #{ addConnTime }
+			 , REBOOT_FLAG = '1'
+			 , GUI_FLAG = 'Y'
+		</set>
+		 WHERE MAC = UPPER(#{ addMac })
+		   AND S_CODE = #{ addShipName }
+	</update>
+	
+	<!-- subdata 신규등록 -->
+	<insert id="insertApSub" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		INSERT INTO TB_AP_INFO_SUB
+		(
+			MAC
+		  , S_CODE
+		  , WIFI_CONN_FLAG
+		  , CONN_TIME
+		  , REBOOT_FLAG
+		)
+		VALUES
+		(
+			UPPER(#{ addMac })
+		  , #{ addShipName }
+		  , #{ addWIFI }
+		  , #{ addConnTime }
+		  , '1'
+		)
+	</insert>
+	
+	<!-- update -->
+	<update id="updateApInfo" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		UPDATE TB_AP_INFO
+		<set>
+			   S_CODE = #{ updScode }
+			 , AP_NAME = #{ updApName }
+			 , SERIAL_NO = #{ updSerial }
+			 , BAND_WIDTH = #{ updBand }
+			 , CON_USER = #{ updConUser }
+			 , DESCR = #{ updDescr }
+			 , IP_NO = #{ updIpNumber } 
+			 , GUI_FLAG = 'Y'
+			 , MODIFY_DATE = NOW()
+		</set>
+		 WHERE MAC = UPPER(#{ updMac })
+		   AND S_CODE = #{ updScode }
+	</update>
+	
+	<!-- subdata 중복검사2 -->
+    <select id="chkSubData2" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT MAC
+    	  FROM TB_AP_INFO_SUB
+    	 WHERE MAC = UPPER(#{ updMac })
+    	   AND S_CODE = #{ updScode }
+    </select>
+    
+    <!-- updateApSubY -->
+	<update id="updateApSubY" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		UPDATE TB_AP_INFO_SUB
+		<set>
+			   WIFI_CONN_FLAG = #{ updWIFI }
+			 , CONN_TIME = #{ updConnTime }
+			 , REBOOT_FLAG = '1'
+			 , GUI_FLAG = 'Y'
+		</set>
+		 WHERE MAC = UPPER(#{ updMac })
+		   AND S_CODE = #{ updScode }
+	</update>
+	
+	<!-- updateApSubY -->
+	<insert id="insertApSubY" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		INSERT INTO TB_AP_INFO_SUB
+		(
+			MAC
+		  , S_CODE
+		  , WIFI_CONN_FLAG
+		  , CONN_TIME
+		  , REBOOT_FLAG
+		)
+		VALUES
+		(
+			UPPER(#{ updMac })
+		  , #{ updShipName }
+		  , #{ updWIFI }
+		  , #{ updConnTime }
+		  , '1'
+		)
+	</insert>
+	
+	<!-- updateApSubN -->
+	<update id="updateApSubN" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		UPDATE TB_AP_INFO_SUB
+		<set>
+			   WIFI_CONN_FLAG = #{ updWIFI }
+			 , REBOOT_FLAG = '0'
+			 , GUI_FLAG = 'Y'
+		</set>
+		 WHERE MAC = UPPER(#{ updMac })
+		   AND S_CODE = #{ updScode }
+	</update>
+	
+	<!-- insertApSubN -->
+	<insert id="insertApSubN" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		INSERT INTO TB_AP_INFO_SUB
+		(
+			MAC
+		  , S_CODE
+		  , WIFI_CONN_FLAG
+		  , CONN_TIME
+		  , REBOOT_FLAG
+		)
+		VALUES
+		(
+			UPPER(#{ updMac })
+		  , #{ updScode }
+		  , #{ updWIFI }
+		  , #{ updConnTime }
+		  , '0'
+		)
+	</insert>
+	
+	<!-- 삭제 -->
+	<update id="deleteApInfo" parameterType="iwm_ko.apinfo.model.ApInfoVo">
+		UPDATE TB_AP_INFO
+		<set>
+			   DEL_FLAG = 'Y'
+			 , DEL_DATE = NOW()
+			 , GUI_FLAG = 'Y'
+		</set>
+		 WHERE MAC = UPPER(#{ mac })
+		   AND S_CODE = #{ s_code }
+	</update>
+	
+	<!-- 기존 XML 설정 예시 -->
+	<select id="reboot" statementType="CALLABLE" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="java.lang.Integer">
+	    CALL PRC_AUTH_REQ_WEB(
+	        #{pFlag, mode=IN, jdbcType=VARCHAR},
+	        #{mac, mode=IN, jdbcType=VARCHAR},
+	        #{pTermMac, mode=IN, jdbcType=VARCHAR},
+	        #{pDiscReason, mode=IN, jdbcType=VARCHAR},
+	        #{vResult, jdbcType=INTEGER, mode=OUT}
+	    )
+	</select>
+	
+	<!-- update ap_name 중복검사 -->
+    <select id="updChkName" parameterType="iwm_ko.apinfo.model.ApInfoVo" resultType="iwm_ko.apinfo.model.ApInfoVo">
+    	SELECT AP_NAME
+    	  FROM TB_AP_INFO
+    	 WHERE AP_NAME = #{ updApName }
+		   AND MAC != UPPER(#{ updMac })
+    	   AND S_CODE = #{ updScode }
+    	   AND DEL_FLAG = 'N'
+    </select>
+
+
+</mapper>

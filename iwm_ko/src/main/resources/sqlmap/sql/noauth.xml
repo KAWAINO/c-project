@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.noauth">
+
+    <!-- authList 리스트 조회 -->
+    <select id="selectAuthList" parameterType="iwm_ko.noauth.model.NoAuthVo" resultType="iwm_ko.noauth.model.NoAuthVo">
+    	SELECT B.MAC, B.TERM_NAME, A.COMP_NAME, A.S_NAME, A.S_CODE, B.DESCR
+		  FROM (
+				   SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+				   FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+				   WHERE S.COMP_ID = C.COMP_ID
+				 )A, TB_NO_AUTH_INFO B
+		 WHERE A.S_CODE = B.S_CODE
+		   AND B.DEL_FLAG = 'N'
+		   
+		<if test="searchCompId != null and searchCompId != ''">
+		  AND COMP_ID = #{ searchCompId }
+		</if>  
+		<if test="scomp != 0 and scomp != null">
+		  AND COMP_ID = #{ scomp }
+		</if>  
+		<if test="searchShipName != null and searchShipName != ''">
+		  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+		</if> 
+		<if test="searchTermName != null and searchTermName != ''">
+		  AND TERM_NAME LIKE CONCAT('%', #{ searchTermName }, '%')
+		</if>
+		
+		ORDER BY A.COMP_NAME, A.S_NAME, B.TERM_NAME, B.MAC
+		   
+		 <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+	     LIMIT #{startrow}, #{fetchrow}
+	   	 </if>
+    </select>
+    
+    <!-- 페이징 -->
+    <select id="totalAuthList" parameterType="iwm_ko.noauth.model.NoAuthVo" resultType="int">
+    SELECT COUNT(*)
+  		  FROM (
+		    	SELECT B.MAC, B.TERM_NAME, A.COMP_NAME, A.S_NAME, A.S_CODE, B.DESCR
+				  FROM (
+					   	SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+					      FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+					     WHERE S.COMP_ID = C.COMP_ID
+				       )A, TB_NO_AUTH_INFO B
+				 WHERE A.S_CODE = B.S_CODE
+				   AND B.DEL_FLAG = 'N'
+			    
+				 <if test="searchCompId != null and searchCompId != ''">
+				   AND COMP_ID = #{ searchCompId }
+				 </if>  
+		 		<if test="scomp != 0 and scomp != null">
+				  AND COMP_ID = #{ scomp }
+				</if>  
+				<if test="searchShipName != null and searchShipName != ''">
+				  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+				</if> 
+				<if test="searchTermName != null and searchTermName != ''">
+				  AND TERM_NAME LIKE CONCAT('%', #{ searchTermName }, '%')
+				</if>
+			   )COUNT
+    </select>
+    
+    <!-- mac 중복검사 -->
+    <select id="chkMac" parameterType="iwm_ko.noauth.model.NoAuthVo" resultType="iwm_ko.noauth.model.NoAuthVo">
+    	SELECT MAC
+    	  FROM TB_NO_AUTH_INFO
+    	 WHERE MAC = UPPER(#{ addMac })
+    	   AND DEL_FLAG = 'N'
+    </select>
+    
+    <!-- term_name 중복검사 -->
+    <select id="chkName" parameterType="iwm_ko.noauth.model.NoAuthVo" resultType="iwm_ko.noauth.model.NoAuthVo">
+    	SELECT TERM_NAME
+    	  FROM TB_NO_AUTH_INFO
+    	 WHERE TERM_NAME = #{ addTermName }
+    	   AND S_CODE = #{ addShipName }
+    	   AND MAC != UPPER( #{ addMac } )
+    	   AND DEL_FLAG = 'N'
+    </select>
+    
+    <!-- flag 체크 -->
+    <select id="chkFlag" parameterType="iwm_ko.noauth.model.NoAuthVo" resultType="iwm_ko.noauth.model.NoAuthVo">
+    	SELECT DEL_FLAG
+    	  FROM TB_NO_AUTH_INFO
+    	 WHERE MAC = UPPER(#{ addMac })
+    </select>
+    
+     <!-- 기존 데이터 수정 -->
+	<update id="chgAuth" parameterType="iwm_ko.noauth.model.NoAuthVo">
+		UPDATE TB_NO_AUTH_INFO
+		<set>
+			   TERM_NAME = #{ addTermName }
+			 , S_CODE = #{ addShipName }
+			 , DESCR = #{ addDescr }
+			 , GUI_FLAG = 'Y'
+			 , DEL_FLAG = 'N'
+			 , MODIFY_DATE = NOW()
+		</set>
+		 WHERE MAC = UPPER(#{ addMac })
+	</update>
+	
+	<!-- 신규등록 -->
+	<insert id="insAuth" parameterType="iwm_ko.noauth.model.NoAuthVo">
+		INSERT INTO TB_NO_AUTH_INFO
+		(
+			MAC
+		  , S_CODE
+		  , TERM_NAME
+		  , DESCR
+		  , MODIFY_DATE
+		  , DEL_DATE
+		)
+		VALUES
+		(
+			UPPER(#{ addMac })
+		  , #{ addShipName }
+		  , #{ addTermName }
+		  , #{ addDescr }
+		  , NOW()
+		  , NOW()
+		)
+	</insert>
+	
+	<!-- 수정 modal 이동 -->
+    <select id="selectAuthInfo" parameterType="java.util.HashMap" resultType="iwm_ko.noauth.model.NoAuthVo">
+    	SELECT B.MAC, B.TERM_NAME, A.COMP_ID, A.COMP_NAME, A.S_NAME, A.S_CODE, B.DESCR
+		  FROM (
+		   		SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+		   		  FROM TB_SHIP_INFO S, TB_SCOMP_INFO C
+		   		 WHERE S.COMP_ID=C.COMP_ID
+		       )A, TB_NO_AUTH_INFO B
+		 WHERE A.S_CODE = B.S_CODE
+		  AND B.DEL_FLAG = 'N'
+		  AND B.MAC = UPPER( #{ mac } )
+		  AND B.S_CODE = #{ s_code }
+    </select>
+    
+    <!-- 수정 -->
+	<update id="updateAuth" parameterType="iwm_ko.noauth.model.NoAuthVo">
+		UPDATE TB_NO_AUTH_INFO
+		<set>
+			   TERM_NAME = #{ updTermName }
+			 , S_CODE = #{ updScode }
+			 , DESCR = #{ updDescr }
+			 , MODIFY_DATE = NOW()
+			 , GUI_FLAG = 'Y'
+		</set>
+		 WHERE MAC = UPPER(#{ u_updMac })
+	</update>
+	
+	<!-- 삭제 -->
+	<update id="deleteAuth" parameterType="iwm_ko.noauth.model.NoAuthVo">
+		UPDATE TB_NO_AUTH_INFO
+		<set>
+			   DEL_FLAG = 'Y'
+			 , DEL_DATE = NOW()
+			 , GUI_FLAG = 'Y'
+		</set>
+		 WHERE MAC = UPPER(#{ mac })
+		   AND S_CODE = #{ s_code }
+	</update>
+	
+    <select id="updChkName" parameterType="iwm_ko.noauth.model.NoAuthVo" resultType="iwm_ko.noauth.model.NoAuthVo">
+    	SELECT TERM_NAME
+    	  FROM TB_NO_AUTH_INFO
+    	 WHERE TERM_NAME = #{ updTermName }
+    	   AND S_CODE = #{ updScode }
+    	   AND MAC != UPPER( #{ u_updMac } )
+    	   AND DEL_FLAG = 'N'
+    </select>
+
+</mapper>

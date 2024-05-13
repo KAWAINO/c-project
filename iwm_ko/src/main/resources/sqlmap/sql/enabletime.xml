@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.enableTime">
+
+	<!-- 페이지로딩 리스트 조회 -->
+    <select id="selectEnableTimeList" parameterType="iwm_ko.enableTime.model.EnableTimeVo" resultType="iwm_ko.enableTime.model.EnableTimeVo">
+    	SELECT B.FROM_TIME, B.TO_TIME, B.DESCR, B.MODIFY_DATE, A.COMP_NAME, A.S_NAME, A.S_CODE
+		  FROM (
+		 		  SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+					FROM TB_SHIP_INFO S, TB_SCOMP_INFO C 
+				   WHERE S.COMP_ID = C.COMP_ID
+				 ) A, TB_WIFI_ENABLE_TIME B
+		 WHERE A.S_CODE = B.S_CODE
+		   
+		 <if test="searchCompId != null and searchCompId != ''">
+		   AND COMP_ID = #{ searchCompId }
+		 </if>  
+ 		 <if test="scomp != 0 and scomp != null">
+		   AND COMP_ID = #{ scomp }
+		 </if>  
+		 <if test="searchShipName != null and searchShipName != ''">
+		  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+		</if> 
+		
+		ORDER BY A.COMP_NAME, A.S_NAME
+		   
+		 <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+	     LIMIT #{startrow}, #{fetchrow}
+	   	 </if>
+    </select>
+    
+    <!-- 페이징 -->
+    <select id="totalEnableTimeList" parameterType="iwm_ko.enableTime.model.EnableTimeVo" resultType="int">
+	    SELECT COUNT(*)
+	  		  FROM (
+			    	SELECT B.FROM_TIME, B.TO_TIME, B.DESCR, B.MODIFY_DATE, A.COMP_NAME, A.S_NAME, A.S_CODE
+					  FROM (
+					 		  SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+								FROM TB_SHIP_INFO S, TB_SCOMP_INFO C 
+							   WHERE S.COMP_ID = C.COMP_ID
+							 ) A, TB_WIFI_ENABLE_TIME B
+					 WHERE A.S_CODE = B.S_CODE
+					   
+					 <if test="searchCompId != null and searchCompId != ''">
+					   AND COMP_ID = #{ searchCompId }
+					 </if>  
+			  		 <if test="scomp != 0 and scomp != null">
+					   AND COMP_ID = #{ scomp }
+					 </if>  
+					 <if test="searchShipName != null and searchShipName != ''">
+					  AND S_NAME LIKE CONCAT('%', #{ searchShipName }, '%')
+					</if> 
+					
+					ORDER BY A.COMP_NAME, A.S_NAME
+				  ) AS COUNT
+	</select>
+    
+    <!-- chkTime -->
+    <select id="chkTime" parameterType="iwm_ko.enableTime.model.EnableTimeVo" resultType="iwm_ko.enableTime.model.EnableTimeVo">
+   <![CDATA[
+    	SELECT CASE WHEN (FROM_TIME <= #{ addFromTime } AND TO_TIME >= #{ addToTime }) THEN 'FALSE'
+				    WHEN (FROM_TIME >= #{ addFromTime } AND TO_TIME >= #{ addToTime } AND FROM_TIME <= #{ addToTime }) THEN 'FALSE'
+				    WHEN (FROM_TIME <= #{ addFromTime } AND TO_TIME <= #{ addToTime } AND TO_TIME >= #{ addFromTime }) THEN 'FALSE'
+				    WHEN (FROM_TIME >= #{ addFromTime } AND TO_TIME <= #{ addToTime }) THEN 'FALSE'
+				    ELSE 'TRUE' 
+				     END AS CASE_RESULT
+		  FROM TB_WIFI_ENABLE_TIME
+		 WHERE S_CODE = #{ addShipName }
+	]]>
+    </select>
+    
+    <!-- 등록 -->
+	<insert id="insertTime" parameterType="iwm_ko.enableTime.model.EnableTimeVo">
+		INSERT INTO TB_WIFI_ENABLE_TIME
+		(
+			S_CODE
+		  , FROM_TIME
+		  , TO_TIME
+		  , DESCR
+		  , MODIFY_DATE
+		  , GUI_FLAG
+		)
+		VALUES
+		(
+			#{ addShipName }
+		  , #{ addFromTime }
+		  , #{ addToTime }
+		  , #{ addDescr }
+		  , NOW()
+		  , 'Y'
+		)
+	</insert>
+	
+	<!-- 수정모달 -->
+    <select id="enableTimeInfo" parameterType="java.util.HashMap" resultType="iwm_ko.enableTime.model.EnableTimeVo">
+    	SELECT A.COMP_ID, A.COMP_NAME, A.S_NAME, A.S_CODE, B.FROM_TIME, B.TO_TIME, B.DESCR, B.MODIFY_DATE
+		  FROM (
+					SELECT S.COMP_ID, C.COMP_NAME, S.S_NAME, S.S_CODE
+					  FROM TB_SHIP_INFO S, TB_SCOMP_INFO C 
+					 WHERE S.COMP_ID = C.COMP_ID
+				  )A, TB_WIFI_ENABLE_TIME B
+		 WHERE A.S_CODE = B.S_CODE
+		   AND B.FROM_TIME = #{ from_time }
+		   AND B.S_CODE =  #{ s_code }
+    </select>
+    
+    <!-- 삭제 -->
+	<delete id="deleteEnableTime" parameterType="iwm_ko.enableTime.model.EnableTimeVo">
+		DELETE FROM TB_WIFI_ENABLE_TIME
+		 WHERE FROM_TIME = #{ from_time }
+		   AND TO_TIME = #{ to_time }
+		   AND S_CODE = #{ s_code }
+	</delete>
+
+</mapper>

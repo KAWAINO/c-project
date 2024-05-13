@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.crewStat">
+
+    <select id="selectCompList" parameterType="iwm_ko.crewStat.model.CrewStatVo" resultType="iwm_ko.crewStat.model.CrewStatVo">
+        SELECT COMP_ID as comp_id,
+        COMP_NAME AS comp_name
+        FROM TB_SCOMP_INFO
+        <if test="sessionCompId != 0">
+            where COMP_ID = #{sessionCompId}
+        </if>
+        ORDER BY COMP_NAME
+
+    </select>
+
+    <select id="selectTableName" parameterType="iwm_ko.crewStat.model.CrewStatVo" resultType="String">
+        select FNC_GET_TABLE
+        ('TB_STAT_CREW_H',#{searchStartDate}, #{searchEndDate})
+        GET from dual
+
+    </select>
+
+
+    <select id="selectCrewStatList" parameterType="iwm_ko.crewStat.model.CrewStatVo" resultType="iwm_ko.crewStat.model.CrewStatVo">
+
+     SELECT
+        <choose>
+            <when test="cs_unit != null and cs_unit.equals('hour')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('day')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('week')">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('month')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m') MON_TIME,
+            </when>
+        </choose>
+
+        CREW_ID AS crew_id,
+        CREW_NAME AS crew_name,
+        COMP_NAME AS comp_name,
+        S_NAME AS s_name,
+        CONVERT(SUM(VAL1), INT) AS val1,
+        CONVERT(SUM(VAL2), INT) AS val2,
+        CONVERT((CASE WHEN SUM(VAL1) > 0 THEN FLOOR(SUM(VAL2)/ SUM(VAL1)) ELSE 0 END), INT) sumval
+        FROM
+        (
+        SELECT A.MON_TIME,A.KEY1, A.KEY2 AS CREW_ID, S.CREW_NAME,  SI.S_NAME, C.COMP_NAME, A.VAL1, A.VAL2, A.VAL3
+        FROM
+        ${searchTableName} A,
+        TB_CREW_INFO S,
+        TB_SHIP_INFO SI,
+        TB_SCOMP_INFO C
+        WHERE A.KEY2 = S.CREW_ID
+        AND
+        A.KEY1=S.S_CODE
+        AND
+        S.S_CODE = SI.S_CODE
+        AND
+        SI.COMP_ID = C.COMP_ID
+        AND
+        A.MON_TIME BETWEEN #{searchStartDate} AND #{searchEndDate}
+
+        <if test="cs_ref_comp != null and cs_ref_comp.equals('true')">
+            <if test="searchCompId != null and searchCompId != 'select' and searchCompId != ''">
+                AND C.COMP_ID=#{searchCompId}
+            </if>
+        </if>
+        <if test="sessionCompId != 0">
+            AND C.COMP_ID = #{sessionCompId}
+        </if>
+        <if test="cs_ref_ship != null and cs_ref_ship.equals('true') and searchSCode != null and searchSCode != 'select' and searchSCode != '' ">
+            AND S.S_CODE=#{searchSCode}
+        </if>
+
+        <if test="cs_ref_crew != null and cs_ref_crew.equals('true') and searchCrew != null and searchCrew != ''">
+
+                AND (
+                A.KEY2 LIKE CONCAT('%',#{searchCrew},'%')
+                OR S.CREW_NAME LIKE CONCAT('%',#{searchCrew},'%')
+                )
+
+        </if>
+        ) U GROUP BY
+        <choose>
+            <when test="cs_unit != null and cs_unit.equals('hour')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s')
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('day')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('week')">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('month')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m')
+            </when>
+        </choose>
+        <if test="cs_ref_comp.equals('true')">
+            , COMP_NAME
+        </if>
+        <if test="cs_ref_ship.equals('true')">
+            , S_NAME
+        </if>
+        <if test="cs_ref_crew.equals('true')">
+            , CREW_ID
+        </if>
+        ORDER BY MON_TIME desc, COMP_NAME , S_NAME , CREW_NAME ASC
+
+        <if test="startrow > -1">
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+
+    </select>
+
+
+    <select id="selectCrewStatCount" parameterType="iwm_ko.crewStat.model.CrewStatVo" resultType="iwm_ko.crewStat.model.CrewStatVo">
+
+ SELECT
+        <choose>
+            <when test="cs_unit != null and cs_unit.equals('hour')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('day')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('week')">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('month')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m') MON_TIME,
+            </when>
+        </choose>
+
+        CREW_ID AS crew_id,
+        CREW_NAME AS crew_name,
+        COMP_NAME AS comp_name,
+        S_NAME AS s_name,
+        CONVERT(SUM(VAL1), INT) AS val1,
+        CONVERT(SUM(VAL2), INT) AS val2,
+        CONVERT((CASE WHEN SUM(VAL1) > 0 THEN FLOOR(SUM(VAL2)/ SUM(VAL1)) ELSE 0 END), INT) sumval
+        FROM
+        (
+        SELECT A.MON_TIME,A.KEY1, A.KEY2 AS CREW_ID, S.CREW_NAME,  SI.S_NAME, C.COMP_NAME, A.VAL1, A.VAL2, A.VAL3
+        FROM
+        ${searchTableName} A,
+        TB_CREW_INFO S,
+        TB_SHIP_INFO SI,
+        TB_SCOMP_INFO C
+        WHERE A.KEY2 = S.CREW_ID
+        AND
+        A.KEY1=S.S_CODE
+        AND
+        S.S_CODE = SI.S_CODE
+        AND
+        SI.COMP_ID = C.COMP_ID
+        AND
+        A.MON_TIME BETWEEN #{searchStartDate} AND #{searchEndDate}
+
+        <if test="cs_ref_comp != null and cs_ref_comp.equals('true')">
+            <if test="searchCompId != null and searchCompId != 'select' and searchCompId != ''">
+                AND C.COMP_ID=#{searchCompId}
+            </if>
+        </if>
+        <if test="sessionCompId != 0">
+            AND C.COMP_ID = #{sessionCompId}
+        </if>
+        <if test="cs_ref_ship != null and cs_ref_ship.equals('true') and searchSCode != null and searchSCode != 'select' and searchSCode != '' ">
+            AND S.S_CODE=#{searchSCode}
+        </if>
+
+        <if test="cs_ref_crew != null and cs_ref_crew.equals('true') and searchCrew != null and searchCrew != ''">
+
+            AND (
+            A.KEY2 LIKE CONCAT('%',#{searchCrew},'%')
+            OR S.CREW_NAME LIKE CONCAT('%',#{searchCrew},'%')
+            )
+
+        </if>
+        ) U GROUP BY
+        <choose>
+            <when test="cs_unit != null and cs_unit.equals('hour')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s')
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('day')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('week')">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('month')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m')
+            </when>
+        </choose>
+        <if test="cs_ref_comp.equals('true')">
+            , COMP_NAME
+        </if>
+        <if test="cs_ref_ship.equals('true')">
+            , S_NAME
+        </if>
+        <if test="cs_ref_crew.equals('true')">
+            , CREW_ID
+        </if>
+        ORDER BY MON_TIME desc, COMP_NAME , S_NAME , CREW_NAME ASC
+
+    </select>
+
+    <select id="crewSelectList" parameterType="iwm_ko.crewStat.model.CrewStatVo" resultType="iwm_ko.crewStat.model.CrewStatVo">
+
+        select
+        CREW_ID AS crew_id,
+        CREW_NAME AS crew_name
+        from
+        TB_CREW_INFO C,
+        TB_SHIP_INFO S
+        where
+        C.S_CODE=S.S_CODE
+
+        <if test="sessionCompId != 0">
+            AND COMP_ID = #{sessionCompId}
+        </if>
+        <if test="cs_code != 'all'">
+            AND C.S_CODE= #{s_code}
+        </if>
+
+
+
+    </select>
+
+
+
+    <select id="selectShipNameList" parameterType="iwm_ko.crewStat.model.CrewStatVo" resultType="iwm_ko.crewStat.model.CrewStatVo">
+
+        SELECT
+        S.S_NAME AS ship_name, S.S_CODE AS s_code, C.COMP_NAME AS comp_name
+        FROM  TB_SHIP_INFO S , TB_SCOMP_INFO C
+        where S.COMP_ID=C.COMP_ID
+        <if test="sessionCompId != 0">
+            AND C.COMP_ID = #{comp_id}
+        </if>
+        order by C.COMP_NAME, S.S_NAME
+
+    </select>
+
+</mapper>
+

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.userHistory">
+
+    <insert id="insertUserHistory" parameterType="iwm_ko.userHistory.model.UserHistoryVo">
+        INSERT INTO TB_USER_LOG_CENTER (LOG_DATE, GUI_CODE, JOB_NAME, GUI_REMARK, USER_ID, SQL_STR)
+        VALUES (NOW(), #{gui_code}, #{job_name}, #{gui_remark}, #{user_id}, #{sql_str})
+    </insert>
+
+    <!-- <select id="searchGuiCode" parameterType="String" resultType="String">
+
+        select GUI_CODE from TB_GUI_INFO_CENTER where WEB_NAME=#{menu}
+
+    </select> -->
+
+
+</mapper>

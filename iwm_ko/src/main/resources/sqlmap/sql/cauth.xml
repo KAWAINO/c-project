@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.cauth">
+
+	<!-- 등급별 리스트 조회 -->
+	<select id="selectSearchList" parameterType="iwm_ko.cauth.model.CauthVo" resultType="iwm_ko.cauth.model.CauthVo">
+		SELECT A.GUI_CODE, A.GUI_NAME, A.EN_GUI_NAME, B.GRADE, B.USE_FLAG
+		  FROM TB_GUI_INFO_CENTER A, TB_GUI_GRADE_CENTER B
+		 WHERE A.GUI_CODE = B.GUI_CODE
+		   AND B.GRADE = #{ searchGrade }
+		 ORDER BY A.GUI_CODE
+	</select>
+	
+	<!-- 리스트 카운트 -->
+	<select id="listCnt" parameterType="iwm_ko.cauth.model.CauthVo" resultType="iwm_ko.cauth.model.CauthVo">
+		SELECT COUNT(*) CNT 
+		  FROM (	
+					SELECT A.GUI_CODE, A.GUI_NAME, A.EN_GUI_NAME, B.GRADE, B.USE_FLAG
+			  	 	FROM TB_GUI_INFO_CENTER A, TB_GUI_GRADE_CENTER B
+				   	WHERE A.GUI_CODE=B.GUI_CODE
+				   	AND B.GRADE = #{ searchGrade }
+			   ) C
+	</select>
+	
+	<!-- 등급별 권한 수정 -->
+	<update id="updateGrade" parameterType="iwm_ko.cauth.model.CauthVo">
+		UPDATE TB_GUI_GRADE_CENTER
+		<set>
+			   USE_FLAG = #{ updUseFlag }
+			 , GUI_FLAG = 'Y'
+		 WHERE GUI_CODE = #{ updGuiCode }
+		   AND GRADE = #{ searchGrade }
+		</set>
+	</update>
+	
+
+
+</mapper>

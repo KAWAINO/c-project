@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.shipInfo">
+
+
+    <select id="selectShipInfoList" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="iwm_ko.shipInfo.model.ShipInfoVo">
+
+        SELECT S_CODE, S_NAME, COMP_NAME, AMT_USE_MONTH, AMT_USE_DAY, APMS_STATUS, DESCR,
+        (SELECT COUNT(A.MAC)
+        FROM TB_AP_INFO A, TB_SHIP_INFO SS
+        WHERE C.S_CODE = SS.S_CODE
+        AND SS.S_CODE = A.S_CODE
+        AND A.DEL_FLAG = 'N') AS A_CNT
+        FROM
+        (SELECT
+        A.S_CODE AS S_CODE, A.S_NAME AS S_NAME, A.COMP_NAME AS COMP_NAME, A.COMP_ID AS COMP_ID,
+        B.AMT_USE_MONTH AS AMT_USE_MONTH, B.AMT_USE_DAY AS AMT_USE_DAY,
+        (CASE
+        WHEN B.APMS_STATUS IS NULL THEN '2'
+        ELSE B.APMS_STATUS
+        END) AS APMS_STATUS,
+        A.DESCR AS DESCR, A.DEL_FLAG AS DEL_FLAG
+        FROM
+        (SELECT SI.S_CODE, SI.S_NAME, CI.COMP_NAME, CI.COMP_ID, SI.DESCR, SI.DEL_FLAG
+        FROM TB_SHIP_INFO SI, TB_SCOMP_INFO CI
+        WHERE SI.COMP_ID = CI.COMP_ID) A
+        LEFT JOIN TB_SHIP_STATUS B ON A.S_CODE = B.S_CODE) C
+        WHERE DEL_FLAG = 'N'
+        <if test="sessionCompId != 0">
+            and COMP_ID = #{sessionCompId}
+        </if>
+        <if test="searchCompName != null and searchCompName != ''">
+                AND COMP_ID = #{searchCompName}
+        </if>
+        <if test="searchSCode != null and searchSCode != ''">
+                AND S_CODE = #{searchSCode}
+        </if>
+        <if test="searchSName != null and searchSName != ''">
+                AND S_NAME LIKE CONCAT('%', #{searchSName}, '%')
+        </if>
+        <if test="searchApmsStatus != null and searchApmsStatus != ''">
+                AND APMS_STATUS = #{searchApmsStatus}
+        </if>
+        ORDER BY S_CODE
+
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+
+
+
+
+    </select>
+
+    <!-- 총 개수 조회 -->
+    <select id="selectShipInfoCount" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="iwm_ko.shipInfo.model.ShipInfoVo">
+        SELECT S_CODE, S_NAME, COMP_NAME, AMT_USE_MONTH, AMT_USE_DAY, APMS_STATUS, DESCR,
+        (SELECT COUNT(A.MAC)
+        FROM TB_AP_INFO A, TB_SHIP_INFO SS
+        WHERE C.S_CODE = SS.S_CODE
+        AND SS.S_CODE = A.S_CODE
+        AND A.DEL_FLAG = 'N') AS A_CNT
+        FROM
+        (SELECT
+        A.S_CODE AS S_CODE, A.S_NAME AS S_NAME, A.COMP_NAME AS COMP_NAME, A.COMP_ID AS COMP_ID,
+        B.AMT_USE_MONTH AS AMT_USE_MONTH, B.AMT_USE_DAY AS AMT_USE_DAY,
+        (CASE
+        WHEN B.APMS_STATUS IS NULL THEN '2'
+        ELSE B.APMS_STATUS
+        END) AS APMS_STATUS,
+        A.DESCR AS DESCR, A.DEL_FLAG AS DEL_FLAG
+        FROM
+        (SELECT SI.S_CODE, SI.S_NAME, CI.COMP_NAME, CI.COMP_ID, SI.DESCR, SI.DEL_FLAG
+        FROM TB_SHIP_INFO SI, TB_SCOMP_INFO CI
+        WHERE SI.COMP_ID = CI.COMP_ID) A
+        LEFT JOIN TB_SHIP_STATUS B ON A.S_CODE = B.S_CODE) C
+        WHERE DEL_FLAG = 'N'
+        <if test="sessionCompId != 0">
+            and COMP_ID = #{sessionCompId}
+        </if>
+        <if test="searchCompName != null and searchCompName != ''">
+            AND COMP_ID = #{searchCompName}
+        </if>
+        <if test="searchSCode != null and searchSCode != ''">
+            AND S_CODE = #{searchSCode}
+        </if>
+        <if test="searchSName != null and searchSName != ''">
+            AND S_NAME LIKE CONCAT('%', #{searchSName}, '%')
+        </if>
+        <if test="searchApmsStatus != null and searchApmsStatus != ''">
+            AND APMS_STATUS = #{searchApmsStatus}
+        </if>
+        ORDER BY S_CODE
+    </select>
+    
+    <select id="selectCompList" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="iwm_ko.shipInfo.model.ShipInfoVo">
+        SELECT COMP_ID AS comp_id
+        	 , COMP_NAME AS comp_name
+          FROM TB_SCOMP_INFO 
+         WHERE DEL_FLAG='N'
+        <if test="sessionCompId != 0">
+           AND COMP_ID = #{scomp}
+        </if>
+        ORDER BY COMP_NAME
+    </select>
+
+<!--     <select id="selectShipCompList" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="iwm_ko.shipInfo.model.ShipInfoVo">
+
+        select COMP_ID AS comp_id
+        , COMP_NAME AS comp_name
+        from TB_SCOMP_INFO where DEL_FLAG='N'
+        <if test="sessionCompId != 0">
+            and COMP_ID = #{sessionCompId}
+        </if>
+        ORDER BY COMP_NAME
+
+    </select> -->
+
+    <!--중복검사-->
+    <select id="chkDelFlag" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="string">
+
+        select DEL_FLAG from TB_SHIP_INFO where S_CODE= (CONCAT('S_', #{addCode}))
+
+    </select>
+
+    <!--중복검사-->
+    <select id="chkShipName" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="string">
+
+        select
+        S_NAME
+        from
+        TB_SHIP_INFO
+        where
+        S_NAME=#{addName}
+        and COMP_ID=#{addCompId}
+        and S_CODE!= (CONCAT('S_', #{addCode}))
+        and DEL_FLAG='N'
+    </select>
+
+    <!--중복검사-->
+    <select id="chkSCode" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="iwm_ko.shipInfo.model.ShipInfoVo">
+
+        select
+        S_NAME
+        from
+        TB_SHIP_INFO
+        where
+        S_CODE= (CONCAT('S_', #{addCode}))
+        and
+        DEL_FLAG='N'
+
+
+    </select>
+
+
+
+    <!--  추가 -->
+    <insert id="insertShipInfo" parameterType="iwm_ko.shipInfo.model.ShipInfoVo">
+
+        insert into TB_SHIP_INFO
+        (S_CODE, COMP_ID, S_NAME, DESCR, MODIFY_DATE, DEL_DATE)
+        values
+        (CONCAT('S_', #{addCode}), #{addCompId}, #{addName}, #{addDescr}, NOW(), NOW())
+
+    </insert>
+
+    <!--  상세 정보-->
+    <select id="selectCompInfo" parameterType="java.util.HashMap" resultType="iwm_ko.shipInfo.model.ShipInfoVo">
+
+        select A.S_CODE, A.S_NAME, A.COMP_ID, B.COMP_NAME, A.DESCR
+         from TB_SHIP_INFO A, TB_SCOMP_INFO B
+         where A.COMP_ID=B.COMP_ID
+         and A.S_CODE= #{s_code}
+         and A.DEL_FLAG='N'
+
+    </select>
+
+    <!-- 업데이트 등록 -->
+    <update id="updateShipInsert" parameterType="iwm_ko.shipInfo.model.ShipInfoVo">
+        update
+        TB_SHIP_INFO
+        set
+        COMP_ID=#{addCompId},
+        S_NAME=#{addName},
+        DESCR=#{addDescr},
+        GUI_FLAG='Y',
+        DEL_FLAG='N',
+        MODIFY_DATE=NOW()
+        where S_CODE=(CONCAT('S_', #{addCode}))
+
+    </update>
+
+    <!-- 수정 -->
+    <update id="updateShipInfo" parameterType="iwm_ko.shipInfo.model.ShipInfoVo">
+        update
+        TB_SHIP_INFO
+        set
+        COMP_ID=#{updCompId}, S_NAME=#{updName}, DESCR=#{updDescr}, GUI_FLAG='Y', MODIFY_DATE=NOW()
+        where S_CODE=#{u_updCode}
+
+    </update>
+
+
+    <!--  상세 정보-->
+    <select id="chkDel" parameterType="iwm_ko.shipInfo.model.ShipInfoVo" resultType="java.lang.String">
+
+        SELECT FNC_CHECK_SCODE (#{s_code}) AS RESULT FROM DUAl
+
+    </select>
+
+
+
+</mapper>
+

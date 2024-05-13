@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<fontFamilies>
+
+    <fontFamily name="HYGoThic-Medium">
+        <normal>fonts/HYGothic-Medium Regular.ttf</normal>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+    </fontFamily>
+
+</fontFamilies>
+
+
+<!-- <?xml version="1.0" encoding="UTF-8"?>
+
+<fontFamilies>
+    <fontFamily name="HYGoThic-Medium">
+        <normal>fonts/HYGothic-Medium Regular.ttf</normal>
+        <bold>fonts/HYGothic-Medium Regular.ttf</bold>
+        <italic>fonts/HYGothic-Medium Regular.ttf</italic>
+        <boldItalic>fonts/HYGothic-Medium Regular.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+    </fontFamily>
+</fontFamilies> -->

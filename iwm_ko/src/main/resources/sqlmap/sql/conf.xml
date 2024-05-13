@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.conf">
+
+
+    <select id="selectConfList" parameterType="iwm_ko.conf.model.ConfVo" resultType="iwm_ko.conf.model.ConfVo">
+         select
+        CONF_NAME AS conf_name,VAL AS val, DESCR AS descr
+        from
+        TB_CONF_VAL
+        <if test="searchConf != null and searchConf != ''">
+            WHERE CONF_NAME LIKE CONCAT('%',#{searchConf},'%')
+        </if>
+        order by CONF_NAME
+        <if test="startrow > -1"> <!-- excel 다운로드 시 paging을 위한 limit 제외 -->
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+
+    </select>
+
+
+    <select id="selectConfCount" parameterType="iwm_ko.conf.model.ConfVo" resultType="iwm_ko.conf.model.ConfVo">
+
+        select
+        CONF_NAME AS conf_name,VAL AS val, DESCR AS descr
+        from
+        TB_CONF_VAL
+        <if test="searchConf != null and searchConf != ''">
+            WHERE CONF_NAME LIKE CONCAT('%',#{searchConf},'%')
+        </if>
+
+    </select>
+
+
+    <select id="chkConf" parameterType="iwm_ko.conf.model.ConfVo" resultType="iwm_ko.conf.model.ConfVo">
+        select CONF_NAME
+        from
+        TB_CONF_VAL
+        where
+        CONF_NAME=#{add_conf}
+    </select>
+
+
+
+    <!--  추가 -->
+    <insert id="insertConf" parameterType="iwm_ko.conf.model.ConfVo">
+        insert into
+        TB_CONF_VAL
+        ( CONF_NAME, VAL, DESCR, MODIFY_DATE )
+        values
+        ( #{add_conf} , #{add_val}, #{add_descr}, NOW() )
+
+    </insert>
+
+    <!--  상세 정보-->
+    <select id="selectConfInfo" parameterType="java.util.HashMap" resultType="iwm_ko.conf.model.ConfVo">
+
+        select
+        CONF_NAME AS conf_name, VAL AS val, DESCR AS descr
+        from
+        TB_CONF_VAL where CONF_NAME=#{conf_name}
+
+    </select>
+
+
+    <!-- 수정 -->
+    <update id="updateConf" parameterType="iwm_ko.conf.model.ConfVo">
+
+        update
+        TB_CONF_VAL
+        set VAL=#{upd_val},
+        DESCR=#{upd_descr},
+        MODIFY_DATE=NOW(),
+        GUI_FLAG='Y'
+        where
+        CONF_NAME=#{u_upd_conf}
+
+    </update>
+
+
+    <!-- 삭제 -->
+    <update id="deleteConf" parameterType="iwm_ko.conf.model.ConfVo">
+        delete from
+        TB_CONF_VAL
+        where
+        CONF_NAME=#{u_upd_conf}
+    </update>
+
+</mapper>
+

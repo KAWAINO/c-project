@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.band">
+
+
+    <select id="selectBandList" parameterType="iwm_ko.band.model.BandVo" resultType="iwm_ko.band.model.BandVo">
+        select BAND_WIDTH from TB_BAND_WIDTH order by BAND_WIDTH
+    </select>
+
+
+
+    <select id="chkBand" parameterType="iwm_ko.band.model.BandVo" resultType="iwm_ko.band.model.BandVo">
+        select BAND_WIDTH from TB_BAND_WIDTH where BAND_WIDTH=#{add_band}
+    </select>
+
+
+    <!--  추가 -->
+    <insert id="insertBand" parameterType="iwm_ko.band.model.BandVo">
+        insert into
+        TB_BAND_WIDTH
+        ( BAND_WIDTH, MODIFY_DATE )
+        values
+        ( #{add_band} , NOW() )
+
+    </insert>
+
+
+    <!-- 삭제 -->
+    <update id="deleteBand" parameterType="iwm_ko.band.model.BandVo">
+        delete from TB_BAND_WIDTH where BAND_WIDTH = #{band_width}
+    </update>
+
+</mapper>
+

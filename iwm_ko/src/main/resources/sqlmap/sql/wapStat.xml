@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.wapStat">
+
+
+    <select id="selectCompList" parameterType="iwm_ko.wapStat.model.WapStatVo" resultType="iwm_ko.wapStat.model.WapStatVo">
+
+        select COMP_ID AS comp_id
+        , COMP_NAME AS comp_name
+        from TB_SCOMP_INFO
+        <if test="sessionCompId != 0">
+            WHERE COMP_ID = #{sessionCompId}
+        </if>
+        ORDER BY COMP_NAME
+
+    </select>
+
+
+    <select id="selectTableName" parameterType="iwm_ko.wapStat.model.WapStatVo" resultType="String">
+        select FNC_GET_TABLE
+        ('TB_STAT_WAP_H',#{searchStartDate}, #{searchEndDate})
+        GET from dual
+    </select>
+
+    <select id="selectShipNameList" parameterType="iwm_ko.wapStat.model.WapStatVo" resultType="iwm_ko.wapStat.model.WapStatVo">
+
+        SELECT
+        S.S_CODE AS s_code,
+        S.S_NAME AS s_name,
+        C.COMP_NAME AS comp_name
+        FROM
+        TB_SHIP_INFO S, TB_SCOMP_INFO C
+        WHERE
+        S.COMP_ID =C.COMP_ID
+        <if test="sessionCompId != 0">
+            AND C.COMP_ID = #{sessionCompId}
+        </if>
+        ORDER BY
+        C.COMP_NAME, S.S_NAME
+
+    </select>
+
+
+    <select id="selectWapStatList" parameterType="iwm_ko.wapStat.model.WapStatVo" resultType="iwm_ko.wapStat.model.WapStatVo">
+
+        SELECT
+        <choose>
+            <when test="cs_unit != null and cs_unit.equals('hour')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('day')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('week')">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('month')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m') MON_TIME,
+            </when>
+        </choose>
+
+        COMP_NAME AS comp_name, S_NAME AS s_name, COMP_ID AS comp_id, S_CODE AS s_code, AP_NAME AS ap_name,
+        CONVERT(SUM(VAL1), INT) AS val1, CONVERT(SUM(VAL2), INT) AS val2,
+        CONVERT((CASE WHEN SUM(VAL1) > 0 THEN FLOOR(SUM(VAL2)/ SUM(VAL1)) ELSE 0 END), INT) sumval
+        FROM
+        (SELECT A.MON_TIME,A.KEY2 AS AP_NAME, C.COMP_ID, C.COMP_NAME, S.S_CODE, S.S_NAME, A.VAL1, A.VAL2, A.VAL3
+        FROM
+        ${searchTableName} A,
+        TB_SHIP_INFO S, TB_SCOMP_INFO C
+        WHERE A.KEY1 = S.S_CODE
+        AND S.COMP_ID = C.COMP_ID
+        AND S.COMP_ID = C.COMP_ID
+        AND A.MON_TIME BETWEEN #{searchStartDate} AND #{searchEndDate}
+
+        <if test="cs_ref_comp != null and cs_ref_comp == 'true'">
+            <if test="searchCompId != null and searchCompId != 'select' and searchCompId != ''">
+                AND C.COMP_ID=#{searchCompId}
+            </if>
+        </if>
+
+        <if test="cs_ref_comp == null or cs_ref_comp != 'true'">
+            <if test="sessionCompId != 0">
+                AND C.COMP_ID=#{searchCompId}
+            </if>
+        </if>
+
+        <if test="cs_ref_ship != null and cs_ref_ship == 'true' and searchSCode != null and searchSCode != 'select'">
+            AND S.S_CODE=#{searchSCode}
+        </if>
+
+        <if test="cs_ref_ship != null and cs_ref_ship == 'true' and searchAp != null and searchAp != '' and searchAp != 'select'">
+            AND A.KEY2=#{searchAp}
+        </if>
+        ) U GROUP BY
+        <choose>
+            <when test="cs_unit != null and cs_unit== 'hour'">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s')
+            </when>
+            <when test="cs_unit != null and cs_unit == 'day'">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit == 'week'">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit == 'month'">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m')
+            </when>
+        </choose>
+        <if test="cs_ref_comp != null and cs_ref_comp == 'true'">
+            , COMP_NAME
+        </if>
+        <if test="cs_ref_ship != null and cs_ref_ship=='true' ">
+            , S_NAME
+        </if>
+        <if test="cs_ref_ap != null and cs_ref_ap == 'true' ">
+            , AP_NAME
+        </if>
+        ORDER BY MON_TIME desc, COMP_NAME ASC, S_NAME ASC, AP_NAME ASC
+
+        <if test="startrow > -1">
+            LIMIT #{startrow}, #{fetchrow}
+        </if>
+    </select>
+
+
+
+    <select id="selectWapStatCount" parameterType="iwm_ko.wapStat.model.WapStatVo" resultType="iwm_ko.wapStat.model.WapStatVo">
+
+        SELECT
+        <choose>
+            <when test="cs_unit != null and cs_unit.equals('hour')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('day')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('week')">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d') MON_TIME,
+            </when>
+            <when test="cs_unit != null and cs_unit.equals('month')">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m') MON_TIME,
+            </when>
+        </choose>
+
+        COMP_NAME AS comp_name, S_NAME AS s_name, COMP_ID AS comp_id, S_CODE AS s_code, AP_NAME AS ap_name,
+        CONVERT(SUM(VAL1), INT) AS val1, CONVERT(SUM(VAL2), INT) AS val2,
+        CONVERT((CASE WHEN SUM(VAL1) > 0 THEN FLOOR(SUM(VAL2)/ SUM(VAL1)) ELSE 0 END), INT) sumval
+        FROM
+        (SELECT A.MON_TIME,A.KEY2 AS AP_NAME, C.COMP_ID, C.COMP_NAME, S.S_CODE, S.S_NAME, A.VAL1, A.VAL2, A.VAL3
+        FROM
+        ${searchTableName} A,
+        TB_SHIP_INFO S, TB_SCOMP_INFO C
+        WHERE A.KEY1 = S.S_CODE
+        AND S.COMP_ID = C.COMP_ID
+        AND S.COMP_ID = C.COMP_ID
+        AND A.MON_TIME BETWEEN #{searchStartDate} AND #{searchEndDate}
+
+        <if test="cs_ref_comp != null and cs_ref_comp == 'true'">
+            <if test="searchCompId != null and searchCompId != 'select' and searchCompId != ''">
+                AND C.COMP_ID=#{searchCompId}
+            </if>
+        </if>
+
+        <if test="cs_ref_comp == null or cs_ref_comp != 'true'">
+            <if test="sessionCompId != 0">
+                AND C.COMP_ID=#{searchCompId}
+            </if>
+        </if>
+
+        <if test="cs_ref_ship != null and cs_ref_ship == 'true' and searchSCode != null and searchSCode != 'select'">
+            AND S.S_CODE=#{searchSCode}
+        </if>
+
+        <if test="cs_ref_ship != null and cs_ref_ship == 'true' and searchAp != null and searchAp != '' and searchAp != 'select'">
+            AND A.KEY2=#{searchAp}
+        </if>
+        ) U GROUP BY
+        <choose>
+            <when test="cs_unit != null and cs_unit== 'hour'">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d %H:%i:%s')
+            </when>
+            <when test="cs_unit != null and cs_unit == 'day'">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit == 'week'">
+                DATE_FORMAT(FNC_GET_WEEKDATE(DATE_FORMAT(MON_TIME, '%Y%m%d%H%i%s')), '%Y-%m-%d')
+            </when>
+            <when test="cs_unit != null and cs_unit == 'month'">
+                DATE_FORMAT(STR_TO_DATE(MON_TIME, '%Y%m%d%H%i%s'), '%Y-%m')
+            </when>
+        </choose>
+        <if test="cs_ref_comp != null and cs_ref_comp == 'true'">
+            , COMP_NAME
+        </if>
+        <if test="cs_ref_ship != null and cs_ref_ship=='true' ">
+            , S_NAME
+        </if>
+        <if test="cs_ref_ap != null and cs_ref_ap == 'true' ">
+            , AP_NAME
+        </if>
+        ORDER BY MON_TIME desc, COMP_NAME ASC, S_NAME ASC, AP_NAME ASC
+
+    </select>
+
+
+    <select id="selectWapList" parameterType="iwm_ko.wapStat.model.WapStatVo" resultType="iwm_ko.wapStat.model.WapStatVo">
+
+        select AP_NAME AS ap_name
+        from
+        TB_AP_INFO A,
+        TB_SHIP_INFO S
+        where
+        A.S_CODE=S.S_CODE
+        <if test="sessionCompId != 0">
+            AND COMP_ID = #{sessionCompId}
+        </if>
+        <if test="cs_code != 'all' ">
+            AND A.S_CODE=#{s_code}
+        </if>
+
+        ORDER by AP_NAME
+
+    </select>
+
+
+</mapper>
+

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="iwm_ko.sauth">
+
+    <!-- 선박명 조회 -->
+    <select id="selectShipList" parameterType="iwm_ko.sauth.model.SauthVo" resultType="iwm_ko.sauth.model.SauthVo">
+    	SELECT S_CODE
+    		 , S_NAME
+    	  FROM TB_SHIP_INFO
+    	 WHERE DEL_FLAG = 'N'
+    	  <if test="searchCompId != null and searchCompId != ''">
+		   AND COMP_ID = #{ searchCompId }
+		  </if>
+    	 ORDER BY S_NAME
+    </select>
+    
+    <!-- 선박명 조회 -->
+    <select id="selectSearchList" parameterType="iwm_ko.sauth.model.SauthVo" resultType="iwm_ko.sauth.model.SauthVo">
+	    SELECT B.S_CODE, A.GUI_CODE, A.GUI_NAME, A.EN_GUI_NAME, B.GRADE, B.USE_FLAG
+		  FROM TB_GUI_INFO_SHIP A, TB_GUI_GRADE_SHIP B
+	     WHERE A.GUI_CODE = B.GUI_CODE
+		   AND B.GRADE = #{ searchGrade }
+		   AND B.S_CODE = #{ searchScode }
+		 ORDER BY A.GUI_CODE
+	</select>
+	
+	<!-- 등급별 권한 수정 -->
+	<update id="updateGrade" parameterType="iwm_ko.sauth.model.SauthVo">
+		UPDATE TB_GUI_GRADE_SHIP
+		<set>
+			   USE_FLAG = #{ updUseFlag }
+			 , GUI_FLAG = 'Y'
+		 WHERE GUI_CODE = #{ updGuiCode }
+		   AND GRADE = #{ searchGrade }
+		   AND S_CODE = #{ searchScode }
+		</set>
+	</update>
+
+</mapper>
